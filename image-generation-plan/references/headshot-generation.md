@@ -64,6 +64,14 @@ prompt = """【基础美术风格】ARRI ALEXA 35，Open Gate 4.6K，Cooke Anamo
 - 源头脸通常 `reference_image_paths = []`，除非用户明确要求从同一人物其他已批准阶段保持连续性。
 - 状态脸必须引用源头脸；可视需要再引用上一个状态脸辅助连续性，但生成要求里必须说明源头脸才是身份根。
 
+## 反同脸要求
+
+批量人物或配角人物写脸部任务前，必须先读取 `references/character-appearance-differentiation.md` 并建立角色外貌差异锚点。每个源头脸 prompt 至少写出脸型、额头/发际、眉眼、鼻型、嘴唇/下颌、肤色/纹理、胡须/年龄痕迹中的 6 项；不能只用“清瘦、温和、沉静、安定”这类通用气质词。
+
+如果用户指出某批人物同脸，相关 FACE 与对应 STAND 任务都标为 `# todo`，并用正向外貌锚点重写，不在 prompt 中写“不要像某某”或“避免同脸”。
+
+生成执行时，每生成一张人物图后，必须按 `references/character-appearance-differentiation.md` 的“生成后相似度复检”规则，和上一张人物图及本批已通过人物图对比；不同角色只要第一眼像同一张脸，就返工重做。
+
 ## Prompt 必写内容
 
 每个脸部任务必须写清：
