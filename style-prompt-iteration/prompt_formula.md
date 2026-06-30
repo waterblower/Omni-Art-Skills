@@ -17,7 +17,6 @@ modern Japanese editorial anime illustration, painterly digital painting, matte 
 [CONTENT]
 simple test subject for this iteration, plain neutral background, simple readable space
 
-[LIGHT]
 [LIGHT_COLOR]
 soft diffused light, low-to-medium contrast, muted blue-gray palette with warm coral accents
 
