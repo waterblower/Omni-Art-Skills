@@ -1,7 +1,7 @@
 ---
 name: style-prompt-iteration
 description: Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代技能。用户说 distill style、extract style、style extraction、style distillation、提取美术风格、萃取画风、反推风格、获得风格提示词时触发；一旦读入并用于参考图任务，至少迭代2轮，每轮必须生成脸部特写、人物全身、纯环境至少3张候选图并逐张严格对比修订，尤其检查2D/3D混合、头发塑料高光和特殊风格化处理。
-version: 1.0.6
+version: 1.0.8
 author: Hermes Agent
 license: MIT
 metadata:
@@ -59,10 +59,10 @@ metadata:
 
 按该模板理解提示词层级：
 ```text
-[BASE_STYLE] + [SCENE] + [LIGHT] + [MOOD] + [SUBJECT] + [COMPOSITION] + [QUALITY] + [NEGATIVE_PATCH]
+[BASE_STYLE] + [CONTENT] + [LIGHT_COLOR] + [COMPOSITION] + [NEGATIVE]
 ```
 
-本技能主要产出和修订 `[BASE_STYLE]`，必要时可给出少量 `[MOOD]` / `[NEGATIVE_PATCH]` 建议；不要把参考图中的具体内容写进 `[SCENE]`、`[SUBJECT]` 或 `[COMPOSITION]` 作为“风格”。
+本技能主要产出和修订 `[BASE_STYLE]`，必要时可给出少量 `[LIGHT_COLOR]` / `[NEGATIVE]` 建议；不要把参考图中的具体内容写进 `[CONTENT]` 或 `[COMPOSITION]` 作为“风格”。
 
 ## 风格边界
 
@@ -81,7 +81,7 @@ metadata:
 
 ### 禁用空泛精修词
 
-不要在 `[BASE_STYLE]`、`[QUALITY]` 或最终风格提示词中使用以下泛化精修词，除非用户原文明确要求逐字使用：
+不要在 `[BASE_STYLE]`、`[LIGHT_COLOR]`、`[COMPOSITION]` 或最终风格提示词中使用以下泛化精修词，除非用户原文明确要求逐字使用：
 
 - `fashion magazine cover polish`
 - `crisp manga-cover / fashion magazine finish`
@@ -90,6 +90,30 @@ metadata:
 - `crisp manga-cover`
 
 这些词太容易把结果推向过度精修、商业封面、头发高光过强、塑料感和通用二次元精修脸。需要描述完成度时，改用更可观察的具体风格词，例如：`clean controlled finish`, `reference-matched finish`, `controlled linework and shading`, `matte refined rendering`。
+
+
+### `[NEGATIVE]` 只写真正负面失败项
+
+能用正向提示词约束的内容，不要写进 `[NEGATIVE]`。负面词会强化模型对该对象/概念的注意，容易反向污染画面。
+
+不要写：
+
+- `not over-detailed background`
+- `no detailed background`
+- `not complex background`
+- `not busy composition`
+- `not copied outfit / copied props / copied hair color` 这类把不想要的内容反复点名的词
+
+改成正向约束：
+
+- `low-detail background`
+- `simple background`
+- `minimalistic background`
+- `quiet uncluttered background`
+- `clean empty negative space`
+- `simple original outfit / original props / original hair color`（如果确实需要限制内容层）
+
+`[NEGATIVE]` 只保留无法自然写成正向风格的高风险失败项，例如：`glossy plastic hair`, `wet specular hair`, `photorealistic skin`, `hard vector outlines`, `muddy colors`, `generic over-polished anime face`。如果某个问题可以通过 `[CONTENT]`、`[COMPOSITION]` 或 `[BASE_STYLE]` 正向写清楚，就不要放进 `[NEGATIVE]`。
 
 ### 不得进入风格提示词
 
@@ -140,7 +164,7 @@ simple empty environment, no people, readable space
 
 如果参考图存在 2D/3D 混合、3D 环境渲染、3D 手部/身体体积、镜头畸变、强景深、体积光粒子、局部线稿叠加等特殊处理，必须提取进 `[BASE_STYLE]`；遗漏这些特征视为提取失败。
 
-只把这些维度写入初版 `[BASE_STYLE]` / `[NEGATIVE_PATCH]`。不要复述图中的人物、动物、场景、道具、景别、时间。
+只把这些维度写入初版 `[BASE_STYLE]` / `[NEGATIVE]`。不要复述图中的人物、动物、场景、道具、景别、时间。
 
 完成标准：初版 `[BASE_STYLE]` 独立拿出来也能套到任意主体上，并且不泄漏参考图内容。
 
@@ -150,16 +174,13 @@ simple empty environment, no people, readable space
 
 ```text
 [BASE_STYLE]: <当前风格提示词>
-[SCENE]: <固定测试内容需要的最少空间信息>
-[LIGHT]: <中性光照，不从参考图抄具体时间>
-[MOOD]: <只使用抽象调色词>
-[SUBJECT]: <三类测试内容之一>
+[CONTENT]: <三类测试内容之一 + 必要空间/主体信息>
+[LIGHT_COLOR]: <中性光照 + 抽象调色词，不从参考图抄具体时间>
 [COMPOSITION]: <测试类型需要的最少构图>
-[QUALITY]: <模板质量词，可按风格减少 highly detailed>
-[NEGATIVE_PATCH]: <当前避免项>
+[NEGATIVE]: <真正负面且无法自然正向表达的高风险失败项>
 ```
 
-重要：`[BASE_STYLE]` 要放在最前，权重最高；逐轮修订时优先改 `[BASE_STYLE]` 和 `[NEGATIVE_PATCH]`，不要靠改主体内容骗过风格对比。
+重要：`[BASE_STYLE]` 要放在最前，权重最高；逐轮修订时优先改 `[BASE_STYLE]` 和 `[NEGATIVE]`，不要靠改主体内容骗过风格对比。
 
 完成标准：生成提示词可直接提交给图片模型，且风格层与内容层可分离替换。
 
@@ -174,7 +195,7 @@ simple empty environment, no people, readable space
 ```text
 iteration: 轮次
 style_prompt: 当前 [BASE_STYLE]
-negative_patch: 当前 [NEGATIVE_PATCH]
+negative: 当前 [NEGATIVE]
 test_set:
   face_closeup:
     full_generation_prompt: 完整拼装提示词
@@ -257,7 +278,7 @@ reason: 哪一类测试图仍不合格，为什么必须继续迭代
 1. 一轮只解决最明显的 2-4 个风格偏差。
 2. 优先增加精准风格词，少堆通用质量词。
 3. 删除与目标风格冲突的旧词，不层层堆叠。
-4. `neg` 只放反复出现的错误倾向，不塞无关禁词。
+4. `[NEGATIVE]` 只放真正负面且反复出现的风格失败项；凡是能用正向提示词约束的内容，必须改写到 `[BASE_STYLE]`、`[CONTENT]`、`[LIGHT_COLOR]` 或 `[COMPOSITION]`，不要写成 negative。
 5. 保持 `base` 可迁移，不写入任何主体或场景。
 
 完成标准：新版 `base` 比旧版更短或更准；没有内容词污染；能解释每处变化对应的视觉差距。
@@ -329,9 +350,10 @@ usage_notes:
 7. **只给提示词不生成。** 当任务是让 Codex / ChatGPT 提取、extract、distill、萃取、反推参考图风格时，只输出初版 `[BASE_STYLE]` 就结束是失败；必须先生成候选图组，再对比迭代。
 8. **只生成一张图就停止。** 单张图可能偶然接近；必须每轮生成脸部特写、人物全身、纯环境 3 张图，三张都合格才停止。
 9. **只迭代一轮就停止。** 第 1 轮即使分数很高也不能停止；至少跑第 2 轮，用新 prompt 再生成 3 张图复核稳定性。
-10. **使用空泛商业封面精修词。** 不要把本技能列出的禁用精修词写进 `[BASE_STYLE]`、`[QUALITY]` 或最终风格提示词；它们会诱导过度高光和塑料感。
-11. **默认写文件。** 确认最终风格提示词后，默认只在对话中输出；没有用户明确要求时，不写 `final_style_prompt.yaml`，不更新项目文件。
-12. **只看整体好不好看。** 必须按媒介、渲染、线条、笔触、色彩、明暗、材质、细节密度逐项对比。
+10. **使用空泛商业封面精修词。** 不要把本技能列出的禁用精修词写进 `[BASE_STYLE]`、`[LIGHT_COLOR]`、`[COMPOSITION]` 或最终风格提示词；它们会诱导过度高光和塑料感。
+11. **滥用 negative prompt。** 不要写 `not over-detailed background` 这类可正向约束的问题；应改成 `low-detail background` / `simple background` / `minimalistic background` 等正向表达。
+12. **默认写文件。** 确认最终风格提示词后，默认只在对话中输出；没有用户明确要求时，不写 `final_style_prompt.yaml`，不更新项目文件。
+13. **只看整体好不好看。** 必须按媒介、渲染、线条、笔触、色彩、明暗、材质、细节密度逐项对比。
 
 ## 交付前检查
 
@@ -345,8 +367,9 @@ usage_notes:
 - [ ] 最终 `[BASE_STYLE]` 只包含纯美术风格词。
 - [ ] 没有主体、场景、服装、道具、景别、日夜、世界观、剧情词污染。
 - [ ] 没有使用本技能列出的禁用空泛商业封面精修词。
+- [ ] 没有把可用正向提示词约束的问题写进 `[NEGATIVE]`；例如不要写 `not over-detailed background`，应写 `low-detail/simple/minimalistic background`。
 - [ ] 每轮修订都有可见风格差距依据。
 - [ ] `neg` 只包含高频错误倾向，短而具体。
 - [ ] 没有未经用户明确要求提交图片生成任务。
 - [ ] 没有未经用户明确要求写入最终风格提示词文件或修改项目文档。
-- [ ] 输出了最终 `[BASE_STYLE]` / `[NEGATIVE_PATCH]` 和适用说明。
+- [ ] 输出了最终 `[BASE_STYLE]` / `[NEGATIVE]` 和适用说明。
