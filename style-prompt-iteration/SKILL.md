@@ -1,7 +1,7 @@
 ---
 name: style-prompt-iteration
-description: Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代技能。用户说 distill style、extract style、style extraction、style distillation、提取美术风格、萃取画风、反推风格、获得风格提示词时触发；一旦读入并用于参考图任务，至少迭代2轮，每轮必须生成人物脸部特写、人物全身、纯环境、物品近景（有环境）4张候选图并逐张严格对比修订，尤其检查2D/3D混合、头发塑料高光、人体/肢体生命力和特殊风格化处理。
-version: 1.0.9
+description: Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代技能。用户说 distill style、extract style、style extraction、style distillation、提取美术风格、萃取画风、反推风格、获得风格提示词时触发；一旦读入并用于参考图任务，第一步必须先判定大类媒介（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），不得默认归为2.5D或2D；之后至少迭代2轮，每轮必须生成人物脸部特写、人物全身、纯环境、物品近景（有环境）4张候选图并逐张严格对比修订，尤其检查媒介大类、3D渲染证据、2D/3D混合、头发塑料高光、人体/肢体生命力和特殊风格化处理。
+version: 1.0.10
 author: Hermes Agent
 license: MIT
 metadata:
@@ -128,7 +128,49 @@ metadata:
 
 ## 工作流程
 
-### 1. 建立四类隔离测试内容
+### 1. 先判定大类媒介（最高优先级）
+
+看参考图后，第一件事不是写 `semi-real`、`2.5D`、`digital painting`，而是先给出大类媒介判定。必须在以下五类中选择一个主类，并写出证据：
+
+1. **纯 2D**：明显手绘/平面插画；线稿、笔触、色块、纸面/画布纹理主导；没有真实 3D 几何体积、PBR 材质或摄影镜头痕迹。
+2. **纯 3D 渲染**：CG/游戏/Octane/Unreal/Blender/ZBrush/KeyShot 等渲染感主导；有真实三维几何体积、PBR/SSS 皮肤、毛发系统、镜头景深、接触阴影、环境反射、金属/玻璃/布料/蕾丝等材质响应；可以是 stylized 3D，但主媒介仍是 3D render。
+3. **2.5D**：平面插画为主，但用较强体积光影、软面塑形或伪 3D 质感增强；缺少稳定的 3D 几何、材质物理、真实镜头/渲染管线证据。
+4. **2D + 3D 混合**：画面中有明确 2D 手绘/线稿/笔触层，也有明确 3D 模型/环境/材质层；必须指出哪些部分是 2D，哪些部分是 3D。
+5. **真实摄影**：真实相机拍摄的人/物/场景为主；有真实传感器/镜头噪声、真实皮肤瑕疵、真实物理材质和非 CG 的自然不完美。
+
+大类判定是硬门槛：如果主类判错，后续所有风格 prompt 和生成图都视为失败。尤其禁止把纯 3D 渲染默认写成 `2.5D digital painting`、`semi-real digital painting`、`anime digital painting` 或 `soft anatomical planes`。这些词会把结果推向平面绘画，不能替代 3D 渲染证据。
+
+判定格式必须先输出/记录：
+
+```yaml
+macro_medium:
+  primary_category: pure_3d_render | pure_2d | 2_5d | 2d_3d_hybrid | realistic_photography
+  confidence: 0.0-1.0
+  evidence:
+    skin: ...
+    hair: ...
+    fabric_or_materials: ...
+    lighting_and_shadows: ...
+    camera_depth_edges: ...
+  forbidden_defaults_if_wrong:
+    - semi-real 2.5D digital painting
+    - anime digital painting
+    - painterly 2D illustration
+```
+
+当判定为 **纯 3D 渲染** 时，`[BASE_STYLE]` 必须以 3D 渲染语言开头，例如 `stylized high-end 3D character render`, `PBR material response`, `subsurface-scattering skin`, `strand-based hair`, `ray-traced / cinematic CG lighting`, `depth of field`, `physically plausible fabric, metal, glass, lace`。负面词中必须明确排除错误媒介：`2D illustration, digital painting, painterly brushwork, cel shading, lineart, flat anime rendering, 2.5D look`。
+
+当判定为 **纯 2D** 时，才使用插画/笔触/线稿/色块语言；不得写 3D render / PBR / SSS / ray-traced。
+
+当判定为 **2.5D** 时，必须说明为什么不是纯 3D，也不是纯 2D；不要把所有半写实图都粗暴归为 2.5D。
+
+当判定为 **2D + 3D 混合** 时，`[BASE_STYLE]` 必须分别描述 2D 层和 3D 层，不得把混合风格压平成一种“2.5D”。
+
+当判定为 **真实摄影** 时，必须优先使用摄影语言；不得用 3D/2D 词替代真实镜头与现实材质证据。
+
+完成标准：在进入测试图生成前，已经有明确的大类媒介、证据、禁止误用词；`[BASE_STYLE]` 的第一个短语必须与大类媒介一致。
+
+### 2. 建立四类隔离测试内容
 
 为避免模型把主体内容误当成风格，每轮必须生成 4 张不同测试图，用同一版 `[BASE_STYLE]` 检验风格能否迁移到不同内容：
 
@@ -150,9 +192,9 @@ close-up of a simple everyday object placed in a readable environment, no people
 
 完成标准：参考图风格和四类测试内容被分离；后续对比只评估画风，不评估内容是否像参考图。
 
-### 2. 从参考图反推初版 `[BASE_STYLE]`
+### 3. 从参考图反推初版 `[BASE_STYLE]`
 
-实际读图，先在心中识别以下纯美术维度：
+实际读图，并基于第 1 步的大类媒介判定，识别以下纯美术维度：
 
 1. 媒介类型。
 2. 渲染方式。
@@ -164,7 +206,7 @@ close-up of a simple everyday object placed in a readable environment, no people
 8. 细节密度和完成度。
 9. 需要避免的常见偏差。
 
-如果参考图存在 2D/3D 混合、3D 环境渲染、3D 手部/身体体积、镜头畸变、强景深、体积光粒子、局部线稿叠加等特殊处理，必须提取进 `[BASE_STYLE]`；遗漏这些特征视为提取失败。
+如果参考图存在纯 3D 渲染、2D/3D 混合、3D 环境渲染、3D 手部/身体体积、镜头畸变、强景深、体积光粒子、局部线稿叠加等特殊处理，必须提取进 `[BASE_STYLE]`；遗漏这些特征视为提取失败。对纯 3D 参考图，必须保留 3D render / CG / PBR / SSS / strand hair / DOF / material response 等媒介证据，不得改写成 2.5D 或 digital painting。
 
 只把这些维度写入初版 `[BASE_STYLE]` / `[NEGATIVE]`。不要复述图中的人物、动物、场景、道具、景别、时间。
 
@@ -184,7 +226,7 @@ close-up of a simple everyday object placed in a readable environment, no people
 
 完成标准：初版 `[BASE_STYLE]` 独立拿出来也能套到任意主体上，并且不泄漏参考图内容。
 
-### 3. 按 `prompt_formula.md` 拼装生成提示词
+### 4. 按 `prompt_formula.md` 拼装生成提示词
 
 使用模板层级拼装候选图提示词：
 
@@ -200,9 +242,9 @@ close-up of a simple everyday object placed in a readable environment, no people
 
 完成标准：生成提示词可直接提交给图片模型，且风格层与内容层可分离替换。
 
-### 4. 生成候选图（强制步骤）
+### 5. 生成候选图（强制步骤）
 
-这是本技能的核心强制步骤。Codex / ChatGPT 只要读入本技能并正在处理参考图/风格图任务，就必须调用可用的图片生成工具，至少完成 2 轮生图-对比-修订循环；每轮真实生成至少 4 张候选图：人物脸部特写、人物全身、纯环境、物品近景（有环境），然后进入第 5 步对比。不能只生成 1 张图后停止，不能只跑 1 轮后停止，不能在第 2 或第 3 步后停止，不能只交付初版 `[BASE_STYLE]`。
+这是本技能的核心强制步骤。Codex / ChatGPT 只要读入本技能并正在处理参考图/风格图任务，就必须调用可用的图片生成工具，至少完成 2 轮生图-对比-修订循环；每轮真实生成至少 4 张候选图：人物脸部特写、人物全身、纯环境、物品近景（有环境），然后进入第 6 步对比。不能只生成 1 张图后停止，不能只跑 1 轮后停止，不能在第 3 或第 4 步后停止，不能只交付初版 `[BASE_STYLE]`。
 
 如果当前环境没有图片生成工具、工具报错、额度不足或参考图无法读取，必须直接报告阻塞原因，并给出已完成的初版 `[BASE_STYLE]` 作为临时草稿；不得谎称已经生成、对比或迭代。
 
@@ -212,6 +254,7 @@ close-up of a simple everyday object placed in a readable environment, no people
 iteration: 轮次
 style_prompt: 当前 [BASE_STYLE]
 negative: 当前 [NEGATIVE]
+macro_medium: 当前大类媒介判定
 test_set:
   face_closeup:
     full_generation_prompt: 完整拼装提示词
@@ -229,7 +272,7 @@ test_set:
 
 完成标准：4 张候选图都真实生成并可打开检查；产物记录里有 4 个候选图路径或 URL；不得用想象结果替代工具输出；不得把“建议下一步生成”当作完成。
 
-### 5. 纯风格对比
+### 6. 纯风格对比
 
 对比参考图与候选图时，忽略以下差异：
 
@@ -242,7 +285,8 @@ test_set:
 只评估以下差异：
 
 ```text
-媒介是否一致
+大类媒介是否一致（纯2D / 纯3D渲染 / 2.5D / 2D+3D混合 / 真实摄影）
+若目标是纯3D渲染，是否具备CG几何体积、PBR/SSS材质、毛发系统、真实镜头/DOF/接触阴影；是否错误变成2D/2.5D/digital painting
 渲染方式是否一致
 线条粗细/存在感是否一致
 笔触纹理是否一致
@@ -262,6 +306,11 @@ test_set:
 ```yaml
 iteration: 1
 tests:
+  macro_medium_gate:
+    target: pure_3d_render | pure_2d | 2_5d | 2d_3d_hybrid | realistic_photography
+    candidate_category: ...
+    pass: false
+    reason: 大类媒介是否判错，例如纯3D参考图被生成成2.5D插画
   face_closeup:
     style_match_score: 0.72
     pass: false
@@ -294,28 +343,32 @@ stop: false
 reason: 哪一类测试图仍不合格，为什么必须继续迭代
 ```
 
+额外强制检查：先检查 `macro_medium_gate`。如果参考图是纯 3D 渲染，而候选图变成 2.5D、2D digital painting、painterly illustration、cel/anime illustration，则直接失败，不再用脸、配色、服装细节补分。
+
 额外强制检查：`full_body` 不得只检查脸、头发和服装好不好看，必须检查人体/肢体生命力是否匹配参考图。若全身图出现软弱纸片身体、无肌肉切面、无重心、无肢体张力、衣褶不服从身体体积，即使脸和配色接近，也必须判失败并继续迭代。
 
 完成标准：每条修订都能对应一个可见的风格差距，而不是泛泛地说“更高级”“更好看”。
 
-### 6. 修订提示词
+### 7. 修订提示词
 
 修订原则：
 
 1. 一轮只解决最明显的 2-4 个风格偏差。
 2. 优先增加精准风格词，少堆通用质量词。
 3. 删除与目标风格冲突的旧词，不层层堆叠。
-4. `[NEGATIVE]` 只放真正负面且反复出现的风格失败项；凡是能用正向提示词约束的内容，必须改写到 `[BASE_STYLE]`、`[CONTENT]`、`[LIGHT_COLOR]` 或 `[COMPOSITION]`，不要写成 negative。
-5. 保持 `base` 可迁移，不写入任何主体或场景。
+4. 如果大类媒介判错，先改媒介词，不要先修脸、配色、服装。纯 3D 目标必须删除 `2.5D`, `digital painting`, `painterly`, `illustration`, `linework`, `brushwork`, `cel shading` 等冲突词；加入 3D/CG/PBR/SSS/strand hair/DOF/material response 等正向证据。
+5. `[NEGATIVE]` 只放真正负面且反复出现的风格失败项；凡是能用正向提示词约束的内容，必须改写到 `[BASE_STYLE]`、`[CONTENT]`、`[LIGHT_COLOR]` 或 `[COMPOSITION]`，不要写成 negative。
+6. 保持 `base` 可迁移，不写入任何主体或场景。
 
 完成标准：新版 `base` 比旧版更短或更准；没有内容词污染；能解释每处变化对应的视觉差距。
 
-### 7. 停止条件
+### 8. 停止条件
 
 满足以下条件才停止：
 
 - 至少完成 2 轮迭代；每轮都包含人物脸部特写、人物全身、纯环境、物品近景（有环境）4 张候选图。
 - 同一轮的 4 张测试图全部通过：人物脸部特写、人物全身、纯环境、物品近景（有环境）。
+- 大类媒介门槛通过：候选图必须与参考图同属纯2D、纯3D渲染、2.5D、2D+3D混合或真实摄影中的同一主类；主类错误时不得停止。
 - 每张测试图的 `style_match_score >= 0.9`，且没有重大风格偏差。
 - 4 张候选图都与参考图在纯美术维度上基本一致：媒介、渲染、线条、笔触、色彩、明暗、材质、细节密度基本对齐。
 - 人物全身候选图的人体/肢体生命力、形体体积、肌肉/皮肤平面、衣料受力必须对齐参考图；这是硬性通过项，不得被脸部或配色分数抵消。
@@ -331,6 +384,7 @@ final_style_prompt:
   neg: >
     ...
 fit_notes:
+  macro_medium: pure_3d_render | pure_2d | 2_5d | 2d_3d_hybrid | realistic_photography
   style_match_score: 0.91
   best_iteration: 4
   stable_traits:
@@ -384,11 +438,14 @@ usage_notes:
 11. **滥用 negative prompt。** 不要写 `not over-detailed background` 这类可正向约束的问题；应改成 `low-detail background` / `simple background` / `minimalistic background` 等正向表达。
 12. **默认写文件。** 确认最终风格提示词后，默认只在对话中输出；没有用户明确要求时，不写 `final_style_prompt.yaml`，不更新项目文件。
 13. **只看整体好不好看。** 必须按媒介、渲染、线条、笔触、色彩、明暗、材质、细节密度逐项对比。
+14. **默认归为 2.5D。** 看到半写实人物就写 `semi-real 2.5D digital painting` 是严重错误。必须先区分纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影；参考图是纯3D时，任何 2.5D/2D/digital painting 候选都应直接判失败。
 
 ## 交付前检查
 
 - [ ] 触发词 `distill` / `extract` / `提取` / `萃取` / `反推` 等已按本技能处理，而不是按普通看图提示词处理。
 - [ ] 已读取 `prompt_formula.md`。
+- [ ] 已先判定大类媒介：纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影；没有默认写成 2.5D 或 2D。
+- [ ] 如果目标是纯3D渲染，`[BASE_STYLE]` 使用 3D/CG/PBR/SSS/strand hair/DOF/material response 语言，且 `[NEGATIVE]` 排除了 2D illustration / digital painting / painterly / lineart / cel shading / 2.5D look。
 - [ ] 已实际查看参考图和 4 张候选图。
 - [ ] 至少完成 2 轮迭代；第 1 轮不能作为最终停止轮。
 - [ ] 每轮至少真实生成了 4 张候选图：人物脸部特写、人物全身、纯环境、物品近景（有环境）；若未生成，已明确报告工具阻塞原因。
@@ -399,6 +456,7 @@ usage_notes:
 - [ ] 没有使用本技能列出的禁用空泛商业封面精修词。
 - [ ] 没有把可用正向提示词约束的问题写进 `[NEGATIVE]`；例如不要写 `not over-detailed background`，应写 `low-detail/simple/minimalistic background`。
 - [ ] 每轮修订都有可见风格差距依据。
+- [ ] 大类媒介错误时已先修正媒介词，而不是用脸、配色、细节继续补分。
 - [ ] `neg` 只包含高频错误倾向，短而具体。
 - [ ] 没有未经用户明确要求提交图片生成任务。
 - [ ] 没有未经用户明确要求写入最终风格提示词文件或修改项目文档。
