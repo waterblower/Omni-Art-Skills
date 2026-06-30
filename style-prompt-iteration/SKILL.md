@@ -1,7 +1,7 @@
 ---
 name: style-prompt-iteration
-description: Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代技能。用户说 distill style、extract style、style extraction、style distillation、提取美术风格、萃取画风、反推风格、获得风格提示词时触发；一旦读入并用于参考图任务，至少迭代2轮，每轮必须生成脸部特写、人物全身、纯环境至少3张候选图并逐张对比修订，不得只生成一轮或只输出提示词。
-version: 1.0.3
+description: Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代技能。用户说 distill style、extract style、style extraction、style distillation、提取美术风格、萃取画风、反推风格、获得风格提示词时触发；一旦读入并用于参考图任务，至少迭代2轮，每轮必须生成脸部特写、人物全身、纯环境至少3张候选图并逐张严格对比修订，尤其检查2D/3D混合、头发塑料高光和特殊风格化处理。
+version: 1.0.6
 author: Hermes Agent
 license: MIT
 metadata:
@@ -75,8 +75,21 @@ metadata:
 - 色彩：muted palette, high saturation, teal-orange contrast, pastel, earthy tones, limited palette 等。
 - 明暗：high contrast, low contrast, graphic shadow shapes, soft ambient shading, chiaroscuro 等。
 - 材质处理：matte surface treatment, rough paper grain, oil texture, comic halftone, film grain 等。
-- 完成度：polished key visual, rough concept art, indie illustration, editorial illustration, manga cover finish 等。
+- 完成度：clean controlled finish, rough concept art, indie illustration, editorial illustration, reference-matched finish 等。
 - 稳定负面：not glossy plastic, not over-smoothed, no generic anime face, no flat vector colors 等。
+
+
+### 禁用空泛精修词
+
+不要在 `[BASE_STYLE]`、`[QUALITY]` 或最终风格提示词中使用以下泛化精修词，除非用户原文明确要求逐字使用：
+
+- `fashion magazine cover polish`
+- `crisp manga-cover / fashion magazine finish`
+- `fashion magazine finish`
+- `manga-cover finish`
+- `crisp manga-cover`
+
+这些词太容易把结果推向过度精修、商业封面、头发高光过强、塑料感和通用二次元精修脸。需要描述完成度时，改用更可观察的具体风格词，例如：`clean controlled finish`, `reference-matched finish`, `controlled linework and shading`, `matte refined rendering`。
 
 ### 不得进入风格提示词
 
@@ -124,6 +137,8 @@ simple empty environment, no people, readable space
 7. 材质表面处理。
 8. 细节密度和完成度。
 9. 需要避免的常见偏差。
+
+如果参考图存在 2D/3D 混合、3D 环境渲染、3D 手部/身体体积、镜头畸变、强景深、体积光粒子、局部线稿叠加等特殊处理，必须提取进 `[BASE_STYLE]`；遗漏这些特征视为提取失败。
 
 只把这些维度写入初版 `[BASE_STYLE]` / `[NEGATIVE_PATCH]`。不要复述图中的人物、动物、场景、道具、景别、时间。
 
@@ -314,8 +329,9 @@ usage_notes:
 7. **只给提示词不生成。** 当任务是让 Codex / ChatGPT 提取、extract、distill、萃取、反推参考图风格时，只输出初版 `[BASE_STYLE]` 就结束是失败；必须先生成候选图组，再对比迭代。
 8. **只生成一张图就停止。** 单张图可能偶然接近；必须每轮生成脸部特写、人物全身、纯环境 3 张图，三张都合格才停止。
 9. **只迭代一轮就停止。** 第 1 轮即使分数很高也不能停止；至少跑第 2 轮，用新 prompt 再生成 3 张图复核稳定性。
-10. **默认写文件。** 确认最终风格提示词后，默认只在对话中输出；没有用户明确要求时，不写 `final_style_prompt.yaml`，不更新项目文件。
-11. **只看整体好不好看。** 必须按媒介、渲染、线条、笔触、色彩、明暗、材质、细节密度逐项对比。
+10. **使用空泛商业封面精修词。** 不要把本技能列出的禁用精修词写进 `[BASE_STYLE]`、`[QUALITY]` 或最终风格提示词；它们会诱导过度高光和塑料感。
+11. **默认写文件。** 确认最终风格提示词后，默认只在对话中输出；没有用户明确要求时，不写 `final_style_prompt.yaml`，不更新项目文件。
+12. **只看整体好不好看。** 必须按媒介、渲染、线条、笔触、色彩、明暗、材质、细节密度逐项对比。
 
 ## 交付前检查
 
@@ -328,6 +344,7 @@ usage_notes:
 - [ ] 没有只输出初版提示词就结束。
 - [ ] 最终 `[BASE_STYLE]` 只包含纯美术风格词。
 - [ ] 没有主体、场景、服装、道具、景别、日夜、世界观、剧情词污染。
+- [ ] 没有使用本技能列出的禁用空泛商业封面精修词。
 - [ ] 每轮修订都有可见风格差距依据。
 - [ ] `neg` 只包含高频错误倾向，短而具体。
 - [ ] 没有未经用户明确要求提交图片生成任务。
