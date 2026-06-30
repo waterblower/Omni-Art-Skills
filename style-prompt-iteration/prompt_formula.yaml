@@ -1,0 +1,72 @@
+# ============================================================
+#  AIGC 分层 Prompt 公式  v2.0 (精简版)
+#  无独立 negative 参数的模型 (image2 / MJ / Seedance)
+#  规则：上层稳定不变，下层逐图易变；越前权重越高
+#
+#  拼装 = base + scene + light + mood + face + char + 构图 + qual + neg
+#  分镜每 shot 只填：scene / light / mood / char / 构图
+# ============================================================
+
+# 1 风格基底 (项目级固定，放最前)
+base: >
+  modern graphic novel illustration, western-influenced anime comic art,
+  painterly digital painting, semi-realistic, thick visible brushwork,
+  soft blended shading, hand-painted texture, oil texture, no cel-shading,
+  no vector lineart, Ilya Kuvshinov-inspired, indie illustration
+
+# 2 场景 (只写空间+材质，严禁时间词)
+scene:
+  indoor:  plush sofa, patterned rug, table lamp, vase branches, large window, lived-in surfaces
+  street:  urban street, vintage motorcycle, chrome metal, overhead wires, distant buildings
+  bar:     moody bar interior, bottles, wooden counter, intimate space, rich texture
+  outdoor: open landscape, distant horizon, atmospheric depth
+
+# 3 光照 (独立正交维度，可配任意场景)
+#   五维: source光源 / intensity照度 / contrast对比 / temp色温 / direction方向
+#   ★昼夜由 source+intensity+contrast 决定，色温最自由最次要
+light:
+  day:    natural skylight, high-key bright, soft low-contrast shadows, diffused
+  noon:   direct sun, high-key, hard deep shadows, directional
+  overcast: diffuse skylight, balanced, very low contrast, flat
+  dusk:   low warm sun, fading, medium contrast long shadows, backlight, golden glow
+  night:  moonlight + single practical light, low-key dim, hard high-contrast, dramatic single source
+  neon:   neon practical lights, low-key + bright local pools, high contrast, colored points
+
+# 4 调色 (与 light 配套)
+mood:
+  day_airy:    muted desaturated, low contrast, bright airy, soft pastel
+  noir_cool:   muted cool, cool shadows warm key, high contrast, deep blue
+  warm:        warm desaturated, amber cream tones, cozy, soft contrast
+  teal:        teal-cyan dominant, warm skin contrast, cool-warm complementary
+
+# 5 脸型族系 (项目级共享一份，核心资产)
+face:
+  comic:     stylized illustrative face, minimal nose with soft shadow, defined-shape lips,
+             large characterful eyes, slightly dazed candid expression,
+             asymmetric hand-drawn linework, painterly imperfect, character over polish
+  niji:      refined anime face, delicate symmetrical, clean smooth skin, precise eyes
+  realistic: semi-realistic painterly face, naturalistic proportions, soft sculpted shading
+
+# 6 角色 (每人一份，只写本体特征，不含脸型)
+char:
+  qipao: short tousled black hair in clumps, dark floral cheongsam, mandarin collar, side slit,
+         silver bracelet, earrings, black heels, slender
+  biker: tanned skin, dark windblown hair, open-face helmet with goggles, worn leather jacket,
+         candid wide-eyed, small terrier companion
+
+# 7 构图：逐图现填 (low angle, full body, sitting, crossed legs...)
+
+# 8 质量 (放最后，权重最弱；太精致就删 highly detailed)
+qual: key visual quality, masterpiece, highly detailed
+
+# 9 否定补丁 (持续积累的坑清单，内联进尾部)
+neg: >
+  not glossy plastic hair, no harsh specular on hair, not generic anime face,
+  not over-smoothed, not symmetrical idol face, not oversaturated, not flat colors
+
+# ============================================================
+# 冲突词体检 (输出飘忽先查这几组)
+#   naturalistic ↔ comic    | highly detailed ↔ rough/sketchy
+#   specular ↔ matte/diffuse | 基底写死 daylight ↔ night light
+#   场景层带时间词 ↔ 独立光照层  (场景必须时间中性)
+# ============================================================
