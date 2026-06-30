@@ -1,7 +1,7 @@
 ---
 name: style-prompt-iteration
-description: Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代技能。用户说 distill style、extract style、style extraction、style distillation、提取美术风格、萃取画风、反推风格、获得风格提示词时触发；一旦读入并用于参考图任务，必须先调用图片生成得到候选图，再实际对比参考图与候选图并循环修订，不得只输出提示词就结束。
-version: 1.0.0
+description: Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代技能。用户说 distill style、extract style、style extraction、style distillation、提取美术风格、萃取画风、反推风格、获得风格提示词时触发；一旦读入并用于参考图任务，每轮必须生成脸部特写、人物全身、纯环境至少3张候选图并逐张对比修订，不得只生成一张或只输出提示词。
+version: 1.0.1
 author: Hermes Agent
 license: MIT
 metadata:
@@ -27,7 +27,7 @@ metadata:
 
 ## 目标
 
-把“参考图 → 反推风格提示词 → 生成候选图 → 对比风格差距 → 修订提示词 → 再生成”的手动流程，变成可重复执行的闭环流程。
+把“参考图 → 反推风格提示词 → 生成候选图组 → 对比风格差距 → 修订提示词 → 再生成”的手动流程，变成可重复执行的闭环流程。
 
 最终交付物不是某张具体图片，而是一条稳定可复用的“纯美术风格提示词”。这条提示词只能描述渲染、技法、线条、笔触、色彩、明暗、质感、完成度等美术语言，不绑定具体人物、场景、景别、日夜、世界观或剧情内容。
 
@@ -39,7 +39,7 @@ metadata:
 - 反推出该图的美术风格提示词。
 - 让生成图逐轮逼近参考图的画风。
 - 建立项目级 `base` 风格基底。
-- 按 `prompt_formula.yaml` 的层级写图像提示词。
+- 按 `prompt_formula.md` 的层级写图像提示词。
 - 比较两张图的画风差距并更新风格提示词。
 
 如果用户的措辞是“distill / extract / 提取 / 萃取 / 蒸馏 / 反推 / 获得风格”，且上下文包含参考图或风格图，也必须触发本技能，并默认执行生成-对比-修订闭环，而不是只做文本分析。
@@ -53,14 +53,16 @@ metadata:
 
 ## 必读模板
 
-执行前读取项目模板 ./prompt_formula.yaml
+执行前读取项目模板 `./style-prompt-iteration/prompt_formula.md`。
+
+模板只提供拼装格式和例子，不承载解释、评论或流程规则；所有评论、引导、判断标准都以本技能为准。
 
 按该模板理解提示词层级：
 ```text
-base + scene + light + mood + face + char + 构图 + qual + neg
+[BASE_STYLE] + [SCENE] + [LIGHT] + [MOOD] + [SUBJECT] + [COMPOSITION] + [QUALITY] + [NEGATIVE_PATCH]
 ```
 
-本技能主要产出和修订 `base`，必要时可给出少量 `mood` / `neg` 建议；不要把参考图中的具体内容写进 `scene`、`char` 或构图层作为“风格”。
+本技能主要产出和修订 `[BASE_STYLE]`，必要时可给出少量 `[MOOD]` / `[NEGATIVE_PATCH]` 建议；不要把参考图中的具体内容写进 `[SCENE]`、`[SUBJECT]` 或 `[COMPOSITION]` 作为“风格”。
 
 ## 风格边界
 
@@ -89,21 +91,27 @@ base + scene + light + mood + face + char + 构图 + qual + neg
 
 ## 工作流程
 
-### 1. 建立隔离测试内容
+### 1. 建立三类隔离测试内容
 
-为避免模型把主体内容误当成风格，先选一个“中性测试内容”生成候选图。
+为避免模型把主体内容误当成风格，每轮必须生成 3 张不同测试图，用同一版 `[BASE_STYLE]` 检验风格能否迁移到不同内容：
 
-推荐测试内容只承担载体功能，例如：
+1. **人物脸部特写**：检验脸部线条、五官渲染、肤色处理、局部细节密度。
+2. **人物全身**：检验人体比例、服装/形体的大色块、整体明暗和完成度。
+3. **纯环境**：检验没有人物时的色彩、笔触、空间材质和背景处理。
+
+测试内容只承担载体功能，例如：
 
 ```text
-simple standing character, plain background, neutral pose
+face close-up of a neutral original character, plain background
+full-body neutral original character, simple standing pose, plain background
+simple empty environment, no people, readable space
 ```
 
-或按用户当前项目选一个固定测试主体，但必须在每轮保持不变。测试主体不进入最终 `base`。
+或按用户当前项目选固定测试主体/环境，但三类测试必须每轮都生成，且每轮保持同一测试集。测试主体不进入最终 `[BASE_STYLE]`。
 
-完成标准：参考图风格和测试主体被分离；后续对比只评估画风，不评估内容是否像参考图。
+完成标准：参考图风格和三类测试内容被分离；后续对比只评估画风，不评估内容是否像参考图。
 
-### 2. 从参考图反推初版 `base`
+### 2. 从参考图反推初版 `[BASE_STYLE]`
 
 实际读图，先在心中识别以下纯美术维度：
 
@@ -117,45 +125,54 @@ simple standing character, plain background, neutral pose
 8. 细节密度和完成度。
 9. 需要避免的常见偏差。
 
-只把这些维度写入初版 `base` / `neg`。不要复述图中的人物、动物、场景、道具、景别、时间。
+只把这些维度写入初版 `[BASE_STYLE]` / `[NEGATIVE_PATCH]`。不要复述图中的人物、动物、场景、道具、景别、时间。
 
-完成标准：初版 `base` 独立拿出来也能套到任意主体上，并且不泄漏参考图内容。
+完成标准：初版 `[BASE_STYLE]` 独立拿出来也能套到任意主体上，并且不泄漏参考图内容。
 
-### 3. 按 `prompt_formula.yaml` 拼装生成提示词
+### 3. 按 `prompt_formula.md` 拼装生成提示词
 
 使用模板层级拼装候选图提示词：
 
 ```text
-base: <当前风格提示词>
-scene: <固定中性测试内容需要的最少场景信息>
-light: <中性光照，不从参考图抄具体时间>
-mood: <只使用抽象调色词>
-face/char/构图: <固定测试主体需要的最少内容>
-qual: <模板质量词，可按风格减少 highly detailed>
-neg: <当前避免项>
+[BASE_STYLE]: <当前风格提示词>
+[SCENE]: <固定测试内容需要的最少空间信息>
+[LIGHT]: <中性光照，不从参考图抄具体时间>
+[MOOD]: <只使用抽象调色词>
+[SUBJECT]: <三类测试内容之一>
+[COMPOSITION]: <测试类型需要的最少构图>
+[QUALITY]: <模板质量词，可按风格减少 highly detailed>
+[NEGATIVE_PATCH]: <当前避免项>
 ```
 
-重要：`base` 要放在最前，权重最高；逐轮修订时优先改 `base` 和 `neg`，不要靠改主体内容骗过风格对比。
+重要：`[BASE_STYLE]` 要放在最前，权重最高；逐轮修订时优先改 `[BASE_STYLE]` 和 `[NEGATIVE_PATCH]`，不要靠改主体内容骗过风格对比。
 
 完成标准：生成提示词可直接提交给图片模型，且风格层与内容层可分离替换。
 
 ### 4. 生成候选图（强制步骤）
 
-这是本技能的核心强制步骤。Codex / ChatGPT 只要读入本技能并正在处理参考图/风格图任务，就必须调用可用的图片生成工具，真实生成至少 1 张候选图，然后进入第 5 步对比。不能在第 2 或第 3 步后停止，不能只交付初版 `base`。
+这是本技能的核心强制步骤。Codex / ChatGPT 只要读入本技能并正在处理参考图/风格图任务，就必须调用可用的图片生成工具，每轮真实生成至少 3 张候选图：人物脸部特写、人物全身、纯环境，然后进入第 5 步对比。不能只生成 1 张图后停止，不能在第 2 或第 3 步后停止，不能只交付初版 `[BASE_STYLE]`。
 
-如果当前环境没有图片生成工具、工具报错、额度不足或参考图无法读取，必须直接报告阻塞原因，并给出已完成的初版 `base` 作为临时草稿；不得谎称已经生成、对比或迭代。
+如果当前环境没有图片生成工具、工具报错、额度不足或参考图无法读取，必须直接报告阻塞原因，并给出已完成的初版 `[BASE_STYLE]` 作为临时草稿；不得谎称已经生成、对比或迭代。
 
 每轮保存：
 
 ```text
 iteration: 轮次
-style_prompt: 当前 base
-negative_patch: 当前 neg
-full_generation_prompt: 完整拼装提示词
-candidate_image: 候选图路径或 URL
+style_prompt: 当前 [BASE_STYLE]
+negative_patch: 当前 [NEGATIVE_PATCH]
+test_set:
+  face_closeup:
+    full_generation_prompt: 完整拼装提示词
+    candidate_image: 候选图路径或 URL
+  full_body:
+    full_generation_prompt: 完整拼装提示词
+    candidate_image: 候选图路径或 URL
+  environment:
+    full_generation_prompt: 完整拼装提示词
+    candidate_image: 候选图路径或 URL
 ```
 
-完成标准：候选图真实生成并可打开检查；产物记录里有候选图路径或 URL；不得用想象结果替代工具输出；不得把“建议下一步生成”当作完成。
+完成标准：3 张候选图都真实生成并可打开检查；产物记录里有 3 个候选图路径或 URL；不得用想象结果替代工具输出；不得把“建议下一步生成”当作完成。
 
 ### 5. 纯风格对比
 
@@ -182,17 +199,29 @@ candidate_image: 候选图路径或 URL
 是否出现参考图没有的模型默认味道
 ```
 
+每轮必须分别审查 3 张图，再给出整体结论。任何一张不合格，都必须继续迭代，不能宣布成功。
+
 对比报告格式：
 
 ```yaml
 iteration: 1
-style_match_score: 0.72
-matched:
-  - 已接近的风格点
-missing_or_weak:
-  - 候选图缺少但参考图明显具备的风格点
-excess_or_wrong:
-  - 候选图多出来的错误风格点
+tests:
+  face_closeup:
+    style_match_score: 0.72
+    pass: false
+    missing_or_weak: [候选图缺少但参考图明显具备的风格点]
+    excess_or_wrong: [候选图多出来的错误风格点]
+  full_body:
+    style_match_score: 0.80
+    pass: false
+    missing_or_weak: []
+    excess_or_wrong: []
+  environment:
+    style_match_score: 0.90
+    pass: true
+    missing_or_weak: []
+    excess_or_wrong: []
+overall_pass: false
 prompt_update:
   add_to_base:
     - 需要新增或加强的短语
@@ -201,7 +230,7 @@ prompt_update:
   add_to_neg:
     - 需要避免的错误倾向
 stop: false
-reason: 继续迭代的原因
+reason: 哪一类测试图仍不合格，为什么必须继续迭代
 ```
 
 完成标准：每条修订都能对应一个可见的风格差距，而不是泛泛地说“更高级”“更好看”。
@@ -222,10 +251,11 @@ reason: 继续迭代的原因
 
 满足以下条件才停止：
 
-- 连续一轮或两轮对比中，主要风格维度没有新增重大偏差。
-- `style_match_score >= 0.88`，或模型判断“继续迭代只会带来微小收益”。
-- 候选图与参考图在纯美术维度上已经一致：媒介、渲染、线条、笔触、色彩、明暗、材质、细节密度基本对齐。
-- 最终 `base` 不包含具体内容、景别、时间、世界观、剧情词。
+- 同一轮的 3 张测试图全部通过：人物脸部特写、人物全身、纯环境。
+- 每张测试图的 `style_match_score >= 0.88`，且没有重大风格偏差。
+- 3 张候选图都与参考图在纯美术维度上基本一致：媒介、渲染、线条、笔触、色彩、明暗、材质、细节密度基本对齐。
+- 哪怕只有 1 张测试图不符合，也必须继续迭代，不能确认风格提示词成功。
+- 最终 `[BASE_STYLE]` 不包含具体内容、景别、时间、世界观、剧情词。
 
 停止时输出：
 
@@ -243,7 +273,7 @@ fit_notes:
   remaining_minor_differences:
     - ...
 usage_notes:
-  - 将 base 放在 prompt_formula.yaml 的 base 层最前。
+  - 将 [BASE_STYLE] 放在 prompt_formula.md 的最前。
   - 具体主体、场景、光照、构图仍由下层逐图填写。
 ```
 
@@ -256,10 +286,14 @@ usage_notes:
   reference.png
   iterations.yaml
   iteration_01_prompt.txt
-  iteration_01.png
+  iteration_01_face_closeup.png
+  iteration_01_full_body.png
+  iteration_01_environment.png
   iteration_01_review.yaml
   iteration_02_prompt.txt
-  iteration_02.png
+  iteration_02_face_closeup.png
+  iteration_02_full_body.png
+  iteration_02_environment.png
   iteration_02_review.yaml
   final_style_prompt.yaml
 ```
@@ -274,19 +308,21 @@ usage_notes:
 4. **越改越长。** 风格词堆太多会互相抵消；每轮要删除冲突词。
 5. **过度依赖质量词。** masterpiece、highly detailed 不能替代真实风格描述，还可能把图推向错误的精修默认风格。
 6. **没有参考图也强行生图。** 只有当任务对象是参考图/风格图时，读入本技能才等同于用户要求生成候选图；维护技能文件本身或没有参考图对象时不要凭空生成。
-7. **只给提示词不生成。** 当任务是让 Codex / ChatGPT 提取、extract、distill、萃取、反推参考图风格时，只输出初版 `base` 就结束是失败；必须先生成候选图，再对比迭代。
-8. **只看整体好不好看。** 必须按媒介、渲染、线条、笔触、色彩、明暗、材质、细节密度逐项对比。
+7. **只给提示词不生成。** 当任务是让 Codex / ChatGPT 提取、extract、distill、萃取、反推参考图风格时，只输出初版 `[BASE_STYLE]` 就结束是失败；必须先生成候选图组，再对比迭代。
+8. **只生成一张图就停止。** 单张图可能偶然接近；必须每轮生成脸部特写、人物全身、纯环境 3 张图，三张都合格才停止。
+9. **只看整体好不好看。** 必须按媒介、渲染、线条、笔触、色彩、明暗、材质、细节密度逐项对比。
 
 ## 交付前检查
 
 - [ ] 触发词 `distill` / `extract` / `提取` / `萃取` / `反推` 等已按本技能处理，而不是按普通看图提示词处理。
-- [ ] 已读取 `prompt_formula.yaml`。
-- [ ] 已实际查看参考图和候选图。
-- [ ] 至少真实生成了 1 张候选图；若未生成，已明确报告工具阻塞原因。
+- [ ] 已读取 `prompt_formula.md`。
+- [ ] 已实际查看参考图和 3 张候选图。
+- [ ] 每轮至少真实生成了 3 张候选图：人物脸部特写、人物全身、纯环境；若未生成，已明确报告工具阻塞原因。
+- [ ] 3 张候选图全部通过纯美术风格一致性检查；任一不通过则继续迭代。
 - [ ] 没有只输出初版提示词就结束。
-- [ ] 最终 `base` 只包含纯美术风格词。
+- [ ] 最终 `[BASE_STYLE]` 只包含纯美术风格词。
 - [ ] 没有主体、场景、服装、道具、景别、日夜、世界观、剧情词污染。
 - [ ] 每轮修订都有可见风格差距依据。
 - [ ] `neg` 只包含高频错误倾向，短而具体。
 - [ ] 没有未经用户明确要求提交图片生成任务。
-- [ ] 输出了最终 `base` / `neg` 和适用说明。
+- [ ] 输出了最终 `[BASE_STYLE]` / `[NEGATIVE_PATCH]` 和适用说明。

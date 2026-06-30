@@ -15,4 +15,4 @@
 5. [`image-generation-plan`](image-generation-plan/SKILL.md)：图片制片 / 任务编排；把镜头组、制作包和资产整理为逐张图片生成 TOML 任务。
 6. [`video-prompt-director`](video-prompt-director/SKILL.md)：视频导演；把镜头组或场景段落转成可执行视频提示词。
 7. [`manga-creation-pipeline`](manga-creation-pipeline/SKILL.md)：漫画导演；发展漫画章节、分格页和漫画图任务。
-8. [`style-prompt-iteration`](style-prompt-iteration/SKILL.md)：Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代；用户说 distill、extract、提取、萃取、反推风格时触发；按 `prompt_formula.yaml` 反推、生成候选图、对比并修订风格基底，必须真实生成图片并迭代，不能只输出提示词。
+8. [`style-prompt-iteration`](style-prompt-iteration/SKILL.md)：Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代；用户说 distill、extract、提取、萃取、反推风格时触发；按 `prompt_formula.md` 反推，每轮必须生成脸部特写、人物全身、纯环境至少3张候选图，逐张对比并修订风格基底，三张都合格才停止。
