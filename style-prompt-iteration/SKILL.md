@@ -8,7 +8,7 @@ metadata:
   hermes:
     tags: [image-style, prompt-iteration, art-direction, image-generation, style-matching, style-extraction, style-distillation, extract-style, distill-style]
     aliases: [style-extract, style-distill, art-style-extraction, art-style-distillation, extract-style-prompt, distill-style-prompt, 提取美术风格, 萃取画风, 反推风格, 获得风格提示词]
-    related_skills: [image-art-direction, reverse-image-prompt]
+    related_skills: [image-art-direction]
 ---
 
 # 纯美术风格提示词迭代

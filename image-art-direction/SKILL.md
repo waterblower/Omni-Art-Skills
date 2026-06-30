@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [art-direction, image-generation, visual-style, reference-review, prompt-writing]
-    related_skills: [image-generation-plan, character-reference-pipeline, reverse-image-prompt]
+    related_skills: [image-generation-plan, character-reference-pipeline, style-prompt-iteration]
 ---
 
 # 图片美术风格导演
