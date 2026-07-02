@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cover Image"
+  short_description: "Create soft-light Chinese cover images"
+  default_prompt: "Use $cover-image to create Chinese video covers from a reference image in 16:9, 4:3, and 3:4."
