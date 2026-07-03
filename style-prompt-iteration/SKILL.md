@@ -1,7 +1,7 @@
 ---
 name: style-prompt-iteration
-description: Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代技能。用户说 distill style、extract style、style extraction、style distillation、提取美术风格、萃取画风、反推风格、获得风格提示词时触发；一旦读入并用于参考图任务，第一步必须先判定大类媒介（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），不得默认归为2.5D或2D；之后至少迭代2轮，每轮必须生成人物脸部特写、人物全身、纯环境、物品近景（有环境）4张候选图并逐张严格对比修订，尤其检查媒介大类、3D渲染证据、2D/3D混合、头发塑料高光、人体/肢体生命力和特殊风格化处理。
-version: 1.0.10
+description: Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代并产出新风格生成技能的技能。用户说 distill style、extract style、style extraction、style distillation、提取美术风格、萃取画风、反推风格、获得风格提示词、生成风格技能时触发；一旦读入并用于参考图任务，第一步必须先判定大类媒介（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），不得默认归为2.5D或2D；之后至少迭代2轮，每轮必须生成人物脸部特写、人物全身、纯环境、物品近景（有环境）4张主体锚点候选图，并生成一组材质/纹理锚点图，逐张严格对比修订，最终产出一个可复用的新 skill 文件夹，内含按主体类型和材质类型路由的 reference 图和对应 base_style。
+version: 1.2.0
 author: Hermes Agent
 license: MIT
 metadata:
@@ -29,7 +29,13 @@ metadata:
 
 把“参考图 → 反推风格提示词 → 生成候选图组 → 对比风格差距 → 修订提示词 → 再生成”的手动流程，变成可重复执行的闭环流程。
 
-最终交付物不是某张具体图片，而是一条稳定可复用的“纯美术风格提示词”。这条提示词只能描述渲染、技法、线条、笔触、色彩、明暗、质感、完成度等美术语言，不绑定具体人物、场景、景别、日夜、世界观或剧情内容。
+最终交付物不是某张具体图片，也不是一条低信息量“纯美术风格提示词”，而是一个可复用的新风格生成 skill 文件夹。这个新 skill 用迭代得到的 4 类主体 reference 图和一组材质/纹理 reference 图作为视觉锚点，并用 router 按用户要生成的主体类型与材质类型选择对应 reference 和 `base_style.md`，避免把人物皮肤、头发等不适用于环境/物品的词塞进通用 base。
+
+最终仍可包含一个短的共享风格提示词，但它只能作为 `shared_style_invariants.md` 的一部分；真正用于生成时，必须由新 skill 组合：
+
+```text
+shared_style_invariants.md + references/<subject_route>_base_style.md + references/materials/<material_route>_base_style.md + 用户内容需求
+```
 
 ## 适用范围
 
@@ -39,6 +45,7 @@ metadata:
 - 反推出该图的美术风格提示词。
 - 让生成图逐轮逼近参考图的画风。
 - 建立项目级 `base` 风格基底。
+- 生成一个专门复用该参考图美术风格的新 Codex skill。
 - 按 `prompt_formula.md` 的层级写图像提示词。
 - 比较两张图的画风差距并更新风格提示词。
 
@@ -77,6 +84,45 @@ metadata:
 - 材质处理：matte surface treatment, rough paper grain, oil texture, comic halftone, film grain 等。
 - 完成度：clean controlled finish, rough concept art, indie illustration, editorial illustration, reference-matched finish 等。
 - 稳定负面：not glossy plastic, not over-smoothed, no generic anime face, no flat vector colors 等。
+
+### 必须提取“风格指纹”，不能只提取制作管线
+
+媒介和渲染技术只是风格的底座，不等于完整画风。尤其是纯 3D 渲染参考图，`3D render / PBR / SSS / strand hair / ray-traced light / depth of field` 只能保证结果像 CG，不能保证像同一个美术风格。初版 `[BASE_STYLE]` 必须同时包含以下可迁移的风格指纹；缺任一类都要在迭代中补齐：
+
+- **形状语言**：脸部、五官、身体、物件轮廓是偏圆润、硬朗、纤细、厚重、简化还是复杂；转折是大块面还是碎细节。
+- **比例理想化方式**：是否有游戏角色式理想化五官、清晰但不过度写实的解剖、压低真实瑕疵、强化眼唇轮廓、收敛骨点等；只能写抽象比例处理，不能写具体性别、年龄或角色身份。
+- **边缘层级**：哪些区域锐利，哪些区域软化；是否有柔焦背景、清晰面部焦点、柔和发丝边缘、干净接触边缘。
+- **明暗语法**：大光面与暗面的比例、阴影边界软硬、皮肤高光形状、环境反光强弱、是否依赖局部高光切面塑形。
+- **材质细节频率**：皮肤孔隙、布纹、发丝、金属划痕、木纹等细节是克制、均匀、大片简化还是微细高频；不要只写 `highly detailed`。
+- **色彩配比**：主色、辅助色、点缀色的关系，整体饱和度和黑位，是否有选择性暖红/玫瑰色点缀、冷暖中和、低饱和土色等。
+- **镜头和后期质感**：是否像游戏过场的预渲染镜头、真实镜头 DOF、轻微胶片式 rolloff、干净无噪的 CG 后期，或摄影式高 ISO 噪声。
+- **角色/物体的美术完成度边界**：是通用真实 CG、商业广告 CG、游戏过场角色、收藏手办、影视 VFX、还是插画化 3D；必须避免只写成泛化“高端 3D”。
+
+完成标准：把 `[BASE_STYLE]` 中的媒介/管线词全部删掉后，剩余词仍能描述一个可识别的画风；把具体主体换成环境或物品时，仍能约束色彩、明暗、边缘、材质细节频率和完成度。
+
+### 单张参考图必须区分三类信息
+
+从单张图蒸馏风格时，先把观察结果拆成三类，再写 prompt：
+
+1. **可迁移风格不变量**：换主体、换场景仍应保留的美术语言，例如理想化真实比例、柔和皮肤块面、低饱和土色、受控高光、清晰材质分离、预渲染游戏 CG 完成度。
+2. **条件性风格变量**：只在同类主体上成立的处理，例如人脸 SSS、发丝束状、皮革微光、皮肤高光切面。迁移到环境和物品时要改写成对应材质语言，不能原样堆到所有图里。
+3. **不可迁移内容特征**：具体人、服装、发型、场景、景别、动作、时间、道具、民族/时代符号等，不得进入 `[BASE_STYLE]`。
+
+如果候选图只继承了第 2 类制作细节，却没有继承第 1 类风格不变量，应判为失败。例如参考图是理想化游戏 CG 少女脸，候选图变成写实武术道场男性角色；即使同样有 PBR、SSS、毛发、体积光，也不能认为是同一美术风格。
+
+记录格式：
+
+```yaml
+style_signal_split:
+  transferable_invariants:
+    - ...
+  conditional_style_variables:
+    - ...
+  non_transferable_content:
+    - ...
+  missing_risk_if_only_pipeline_words:
+    - ...
+```
 
 
 ### 禁用空泛精修词
@@ -205,8 +251,11 @@ close-up of a simple everyday object placed in a readable environment, no people
 7. 材质表面处理。
 8. 细节密度和完成度。
 9. 需要避免的常见偏差。
+10. 风格指纹：形状语言、比例理想化方式、边缘层级、明暗语法、材质细节频率、色彩配比、镜头后期、完成度边界。
 
 如果参考图存在纯 3D 渲染、2D/3D 混合、3D 环境渲染、3D 手部/身体体积、镜头畸变、强景深、体积光粒子、局部线稿叠加等特殊处理，必须提取进 `[BASE_STYLE]`；遗漏这些特征视为提取失败。对纯 3D 参考图，必须保留 3D render / CG / PBR / SSS / strand hair / DOF / material response 等媒介证据，不得改写成 2.5D 或 digital painting。
+
+在写初版 `[BASE_STYLE]` 前，必须先输出/记录 `style_signal_split`。如果只写出 `PBR / SSS / strand hair / ray-traced light / high-end 3D render` 这类制作管线词，而没有写形状语言、比例理想化、边缘层级、明暗语法、材质细节频率和色彩配比，视为风格蒸馏不完整。
 
 只把这些维度写入初版 `[BASE_STYLE]` / `[NEGATIVE]`。不要复述图中的人物、动物、场景、道具、景别、时间。
 
@@ -272,6 +321,207 @@ test_set:
 
 完成标准：4 张候选图都真实生成并可打开检查；产物记录里有 4 个候选图路径或 URL；不得用想象结果替代工具输出；不得把“建议下一步生成”当作完成。
 
+### 5.5. 选定新 skill 的 4 张 reference 锚点图
+
+迭代结束前，必须从候选图中选出 4 张作为新风格生成 skill 的核心 references：
+
+1. `face.png`：人脸 / 头像 / 半身特写风格锚点。
+2. `full_body.png`：人物全身 / 角色立绘 / 动作人物风格锚点。
+3. `environment.png`：无人环境 / 室内外空间 / 建筑风格锚点。
+4. `object.png`：物品 / 道具 / 产品 / 材质近景风格锚点。
+
+每张 reference 必须对应一个同名 `*_base_style.md`，只描述该主体类型适用的风格语言：
+
+- `face_base_style.md` 可以写皮肤、五官、眼唇、发丝、面部边缘、脸部材质细节频率。
+- `full_body_base_style.md` 可以写人体比例、形体体积、姿态受力、衣料服从身体、全身材质分区。
+- `environment_base_style.md` 只能写空间、建筑/自然材质、背景色块、光影层级、空间边缘和环境细节频率；不得写皮肤、头发、五官。
+- `object_base_style.md` 只能写物品轮廓、材质、边缘、反射折射、细节密度、放置环境统一性；不得写人体、皮肤、头发、五官。
+
+完成标准：4 张 reference 图都来自真实迭代产出，且每个 `*_base_style.md` 都是按主体类型裁剪过的高信息风格描述，不是从同一个通用 base 复制粘贴。
+
+### 5.6. 生成并选定材质/纹理 reference 锚点图
+
+4 张主体锚点只能覆盖“生成什么类型的图”，不能充分约束“这个风格如何处理不同材质”。因此最终新 skill 必须包含一组材质/纹理 references，用来补足 PBR、粗糙度、反射折射、纹理频率、边缘高光、磨损程度和风格化程度。
+
+默认至少生成并保留以下材质锚点；如果参考图明显包含额外材质，应追加：
+
+1. `skin.png` / `skin_base_style.md`：皮肤、SSS、毛孔密度、皮肤高光、暖冷反光。
+2. `hair.png` / `hair_base_style.md`：发丝、发束、毛发片层、各向异性高光、飞散发控制。
+3. `fabric.png` / `fabric_base_style.md`：布料、织物、纤维频率、褶皱大面、透光/哑光程度。
+4. `leather.png` / `leather_base_style.md`：皮革、漆皮、磨砂皮、边缘磨损、油蜡高光。
+5. `metal.png` / `metal_base_style.md`：金属、粗糙度、边缘高光、划痕、镀层、旧化。
+6. `glass.png` / `glass_base_style.md`：玻璃、水晶、透明度、折射、焦散感、边缘亮线。
+7. `plastic.png` / `plastic_base_style.md`：塑料、树脂、涂层、次表面透光、避免廉价塑料感。
+8. `wood.png` / `wood_base_style.md`：木材、木纹频率、抛光/粗糙、边缘磨损。
+9. `stone.png` / `stone_base_style.md`：石头、岩面、雕塑块面、粗糙纹理、裂纹密度。
+10. `ceramic.png` / `ceramic_base_style.md`：陶瓷、釉面、瓷面高光、裂釉、边缘厚度。
+11. `paper.png` / `paper_base_style.md`：纸张、卡纸、羊皮纸、纤维、印刷/压纹。
+12. `liquid.png` / `liquid_base_style.md`：水、油、透明液体、湿润边缘、反射折射。
+13. `emissive.png` / `emissive_base_style.md`：发光材质、霓虹、魔法/能量表面、辉光边界。
+14. `rubber.png` / `rubber_base_style.md`：橡胶、哑光弹性表面、软边、低反射。
+
+材质图应是中性材质样本或简单材质球/材质块，不得做成复杂道具、角色或场景。每张材质图要用同一版共享风格不变量和该材质专用 prompt 生成，保证它们是同一风格系统下的材质参考。
+
+每个材质 `*_base_style.md` 必须只写该材质的可迁移风格处理，例如：
+
+- 反射/粗糙度范围。
+- 纹理频率和细节密度。
+- 边缘高光和暗部处理。
+- 磨损、裂纹、纤维、划痕、气泡等微细节是否克制。
+- 与整体色彩系统的关系。
+
+完成标准：材质锚点图都真实生成并可打开检查；材质说明不能复制主体 base；后续新 skill 可按“主体 route + 材质 route”组合读取。
+
+### 5.7. 产出新风格生成 skill 文件夹
+
+默认最终必须落盘一个新 skill 文件夹，不能只在对话中输出提示词。除非用户明确要求只看草稿，否则本技能的完成产物是一个可被后续调用的 Codex skill。
+
+新 skill 的目录结构固定如下：
+
+```text
+<generated-style-skill>/
+  SKILL.md
+  references/
+    source_01.png
+    source_02.png
+    source_03.png
+    shared_style_invariants.md
+    router.md
+    face.png
+    face_base_style.md
+    full_body.png
+    full_body_base_style.md
+    environment.png
+    environment_base_style.md
+    object.png
+    object_base_style.md
+    materials/
+      skin.png
+      skin_base_style.md
+      hair.png
+      hair_base_style.md
+      fabric.png
+      fabric_base_style.md
+      leather.png
+      leather_base_style.md
+      metal.png
+      metal_base_style.md
+      glass.png
+      glass_base_style.md
+      plastic.png
+      plastic_base_style.md
+      wood.png
+      wood_base_style.md
+      stone.png
+      stone_base_style.md
+      ceramic.png
+      ceramic_base_style.md
+      paper.png
+      paper_base_style.md
+      liquid.png
+      liquid_base_style.md
+      emissive.png
+      emissive_base_style.md
+      rubber.png
+      rubber_base_style.md
+    negative_prompt.md
+    generation_formula.md
+```
+
+不要创建 `examples/` 目录；不要创建单独 `specs/` 目录；不要把 reference 图和示例图分成两套。`references/` 既保存原始参考图，也保存迭代产出的 4 张主体风格锚点图、材质/纹理锚点图和它们的文本说明。
+
+新 skill 的 `SKILL.md` 必须保持简短，只做三件事：
+
+1. 说明这个 skill 用于按指定参考图美术风格生成新图。
+2. 指示先读取 `references/router.md` 判断用户目标属于哪个主体 route 和哪些材质 route。
+3. 指示只读取相关主体 reference、相关材质 reference 与对应 `*_base_style.md`，再读取 `shared_style_invariants.md`、`negative_prompt.md`、`generation_formula.md`。
+
+新 skill 的 `router.md` 必须按主体类型和材质类型组合路由：
+
+```yaml
+subject_routes:
+  face:
+    when: 人脸、头像、半身特写、面部表情、妆容、发型为主要目标
+    read:
+      - shared_style_invariants.md
+      - face_base_style.md
+      - face.png
+      - negative_prompt.md
+      - generation_formula.md
+  full_body:
+    when: 人物全身、角色立绘、动作人物、服装造型为主要目标
+    read:
+      - shared_style_invariants.md
+      - full_body_base_style.md
+      - full_body.png
+      - negative_prompt.md
+      - generation_formula.md
+  environment:
+    when: 无人场景、建筑、室内、室外、空间氛围为主要目标
+    read:
+      - shared_style_invariants.md
+      - environment_base_style.md
+      - environment.png
+      - negative_prompt.md
+      - generation_formula.md
+  object:
+    when: 物品、道具、产品、材质近景为主要目标
+    read:
+      - shared_style_invariants.md
+      - object_base_style.md
+      - object.png
+      - negative_prompt.md
+      - generation_formula.md
+  mixed:
+    when: 同时包含人物、环境、物体且都重要
+    read: 只读取实际涉及主体类型对应的 base_style 和 reference，不要默认全读
+material_routes:
+  skin:
+    when: 皮肤、面部、手部、人体可见肌肤
+    read: [materials/skin_base_style.md, materials/skin.png]
+  hair:
+    when: 头发、毛发、绒毛、动物毛
+    read: [materials/hair_base_style.md, materials/hair.png]
+  fabric:
+    when: 布料、服装、织物、窗帘、软装
+    read: [materials/fabric_base_style.md, materials/fabric.png]
+  leather:
+    when: 皮革、漆皮、皮带、皮包、皮质服装
+    read: [materials/leather_base_style.md, materials/leather.png]
+  metal:
+    when: 金属、首饰、盔甲、机械、刀剑、五金
+    read: [materials/metal_base_style.md, materials/metal.png]
+  glass:
+    when: 玻璃、水晶、镜片、透明容器、宝石类透明折射
+    read: [materials/glass_base_style.md, materials/glass.png]
+  plastic:
+    when: 塑料、树脂、涂层、合成材料
+    read: [materials/plastic_base_style.md, materials/plastic.png]
+  wood:
+    when: 木头、木家具、木地板、树干、木制道具
+    read: [materials/wood_base_style.md, materials/wood.png]
+  stone:
+    when: 石头、岩壁、雕塑、混凝土、砖石
+    read: [materials/stone_base_style.md, materials/stone.png]
+  ceramic:
+    when: 陶瓷、瓷器、釉面器皿、瓷砖
+    read: [materials/ceramic_base_style.md, materials/ceramic.png]
+  paper:
+    when: 纸张、书页、卡纸、包装、卷轴
+    read: [materials/paper_base_style.md, materials/paper.png]
+  liquid:
+    when: 水、油、饮料、透明液体、湿润表面
+    read: [materials/liquid_base_style.md, materials/liquid.png]
+  emissive:
+    when: 发光材质、霓虹、能量、屏幕、魔法辉光
+    read: [materials/emissive_base_style.md, materials/emissive.png]
+  rubber:
+    when: 橡胶、哑光软质合成表面、轮胎、密封件
+    read: [materials/rubber_base_style.md, materials/rubber.png]
+```
+
+如果用户目标是无人环境，新 skill 不得读取 `face_base_style.md` 或 `full_body_base_style.md`；如果用户目标是物品，不得读取人物风格文件；如果用户目标是人脸，不得读取环境/物品风格文件，除非用户明确要求复杂场景或道具。材质 route 则按画面实际材质叠加读取，例如玻璃香水瓶读取 `object` + `glass` + `metal`，石头神庙读取 `environment` + `stone`，角色全身皮革盔甲读取 `full_body` + `leather` + `metal` + 必要的 `skin` / `hair`。
+
 ### 6. 纯风格对比
 
 对比参考图与候选图时，忽略以下差异：
@@ -311,6 +561,9 @@ tests:
     candidate_category: ...
     pass: false
     reason: 大类媒介是否判错，例如纯3D参考图被生成成2.5D插画
+  style_fingerprint_gate:
+    pass: false
+    reason: 是否只继承了制作管线而没有继承形状语言、比例理想化、边缘层级、明暗语法、材质细节频率和色彩配比
   face_closeup:
     style_match_score: 0.72
     pass: false
@@ -345,6 +598,8 @@ reason: 哪一类测试图仍不合格，为什么必须继续迭代
 
 额外强制检查：先检查 `macro_medium_gate`。如果参考图是纯 3D 渲染，而候选图变成 2.5D、2D digital painting、painterly illustration、cel/anime illustration，则直接失败，不再用脸、配色、服装细节补分。
 
+额外强制检查：再检查 `style_fingerprint_gate`。如果候选图媒介正确，但只是通用高端 CG、通用写实摄影感、广告级 3D、影视 VFX 或模型默认美型，没有保留参考图的比例理想化方式、边缘层级、色彩配比、细节频率和明暗语法，也必须判失败。不能用“PBR/SSS/毛发/体积光都对了”抵消风格指纹缺失。
+
 额外强制检查：`full_body` 不得只检查脸、头发和服装好不好看，必须检查人体/肢体生命力是否匹配参考图。若全身图出现软弱纸片身体、无肌肉切面、无重心、无肢体张力、衣褶不服从身体体积，即使脸和配色接近，也必须判失败并继续迭代。
 
 完成标准：每条修订都能对应一个可见的风格差距，而不是泛泛地说“更高级”“更好看”。
@@ -357,8 +612,9 @@ reason: 哪一类测试图仍不合格，为什么必须继续迭代
 2. 优先增加精准风格词，少堆通用质量词。
 3. 删除与目标风格冲突的旧词，不层层堆叠。
 4. 如果大类媒介判错，先改媒介词，不要先修脸、配色、服装。纯 3D 目标必须删除 `2.5D`, `digital painting`, `painterly`, `illustration`, `linework`, `brushwork`, `cel shading` 等冲突词；加入 3D/CG/PBR/SSS/strand hair/DOF/material response 等正向证据。
-5. `[NEGATIVE]` 只放真正负面且反复出现的风格失败项；凡是能用正向提示词约束的内容，必须改写到 `[BASE_STYLE]`、`[CONTENT]`、`[LIGHT_COLOR]` 或 `[COMPOSITION]`，不要写成 negative。
-6. 保持 `base` 可迁移，不写入任何主体或场景。
+5. 如果大类媒介正确但风格不像，先补风格指纹，不要继续堆制作管线词。优先修订形状语言、比例理想化、边缘层级、明暗语法、材质细节频率和色彩配比。
+6. `[NEGATIVE]` 只放真正负面且反复出现的风格失败项；凡是能用正向提示词约束的内容，必须改写到 `[BASE_STYLE]`、`[CONTENT]`、`[LIGHT_COLOR]` 或 `[COMPOSITION]`，不要写成 negative。
+7. 保持 `base` 可迁移，不写入任何主体或场景。
 
 完成标准：新版 `base` 比旧版更短或更准；没有内容词污染；能解释每处变化对应的视觉差距。
 
@@ -369,20 +625,72 @@ reason: 哪一类测试图仍不合格，为什么必须继续迭代
 - 至少完成 2 轮迭代；每轮都包含人物脸部特写、人物全身、纯环境、物品近景（有环境）4 张候选图。
 - 同一轮的 4 张测试图全部通过：人物脸部特写、人物全身、纯环境、物品近景（有环境）。
 - 大类媒介门槛通过：候选图必须与参考图同属纯2D、纯3D渲染、2.5D、2D+3D混合或真实摄影中的同一主类；主类错误时不得停止。
+- 风格指纹门槛通过：候选图不能只是同媒介、同管线或同质量等级；必须在形状语言、比例理想化、边缘层级、明暗语法、材质细节频率、色彩配比和完成度边界上与参考图一致。
 - 每张测试图的 `style_match_score >= 0.9`，且没有重大风格偏差。
 - 4 张候选图都与参考图在纯美术维度上基本一致：媒介、渲染、线条、笔触、色彩、明暗、材质、细节密度基本对齐。
 - 人物全身候选图的人体/肢体生命力、形体体积、肌肉/皮肤平面、衣料受力必须对齐参考图；这是硬性通过项，不得被脸部或配色分数抵消。
 - 哪怕只有 1 张测试图不符合，或只完成了 1 轮迭代，也必须继续迭代，不能确认风格提示词成功。
 - 最终 `[BASE_STYLE]` 不包含具体内容、景别、时间、世界观、剧情词。
+- 已选定 4 张 reference 锚点图：`face.png`、`full_body.png`、`environment.png`、`object.png`。
+- 已为 4 张 reference 分别写出 `face_base_style.md`、`full_body_base_style.md`、`environment_base_style.md`、`object_base_style.md`，且每个文件只包含该主体类型适用的风格信息。
+- 已生成默认材质/纹理 reference 锚点图和对应 `materials/*_base_style.md`：skin、hair、fabric、leather、metal、glass、plastic、wood、stone、ceramic、paper、liquid、emissive、rubber；如参考图包含额外关键材质，也已追加。
+- 已生成新 skill 文件夹，包含 `SKILL.md`、`references/shared_style_invariants.md`、`references/router.md`、4 张主体 reference 图、4 个对应主体 `*_base_style.md`、`references/materials/` 材质 reference 图和材质 `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
+- 新 skill 的 router 能避免跨主体污染，并能按材质叠加读取：无人环境不读人物文件，物品不读人物文件，人脸不读环境/物品文件；材质文件只按画面实际材质读取。
 
 停止时输出：
 
 ```yaml
-final_style_prompt:
-  base: >
-    ...
-  neg: >
-    ...
+generated_style_skill:
+  path: ...
+  skill_name: ...
+  files:
+    - SKILL.md
+    - references/shared_style_invariants.md
+    - references/router.md
+    - references/face.png
+    - references/face_base_style.md
+    - references/full_body.png
+    - references/full_body_base_style.md
+    - references/environment.png
+    - references/environment_base_style.md
+    - references/object.png
+    - references/object_base_style.md
+    - references/materials/skin.png
+    - references/materials/skin_base_style.md
+    - references/materials/hair.png
+    - references/materials/hair_base_style.md
+    - references/materials/fabric.png
+    - references/materials/fabric_base_style.md
+    - references/materials/leather.png
+    - references/materials/leather_base_style.md
+    - references/materials/metal.png
+    - references/materials/metal_base_style.md
+    - references/materials/glass.png
+    - references/materials/glass_base_style.md
+    - references/materials/plastic.png
+    - references/materials/plastic_base_style.md
+    - references/materials/wood.png
+    - references/materials/wood_base_style.md
+    - references/materials/stone.png
+    - references/materials/stone_base_style.md
+    - references/materials/ceramic.png
+    - references/materials/ceramic_base_style.md
+    - references/materials/paper.png
+    - references/materials/paper_base_style.md
+    - references/materials/liquid.png
+    - references/materials/liquid_base_style.md
+    - references/materials/emissive.png
+    - references/materials/emissive_base_style.md
+    - references/materials/rubber.png
+    - references/materials/rubber_base_style.md
+    - references/negative_prompt.md
+    - references/generation_formula.md
+  router_summary:
+    face: ...
+    full_body: ...
+    environment: ...
+    object: ...
+    materials: ...
 fit_notes:
   macro_medium: pure_3d_render | pure_2d | 2_5d | 2d_3d_hybrid | realistic_photography
   style_match_score: 0.91
@@ -392,36 +700,69 @@ fit_notes:
   remaining_minor_differences:
     - ...
 usage_notes:
-  - 将 [BASE_STYLE] 放在 prompt_formula.md 的最前。
-  - 具体主体、场景、光照、构图仍由下层逐图填写。
+  - 后续生成新图时调用该新 skill。
+  - 新 skill 会先按用户目标选择 face / full_body / environment / object / mixed 主体 route。
+  - 新 skill 再按画面实际材质选择 skin / hair / fabric / leather / metal / glass / plastic / wood / stone / ceramic / paper / liquid / emissive / rubber 等材质 route。
+  - 不要把所有主体 route 或材质 route 的 base_style 合并成一个通用 prompt。
 ```
 
-默认只把最终风格提示词和必要迭代摘要输出在对话里。不要自动创建 `final_style_prompt.yaml`、不要自动修改项目 prompt 文件、不要自动写入 README/设定文档；只有用户明确要求“保存/写入/落盘/更新文件/放到某路径”时，才写文件。
+默认必须创建新 skill 文件夹并报告路径。不要自动创建 README、CHANGELOG、INSTALLATION_GUIDE 等额外文档；新 skill 只保留 `SKILL.md` 和 `references/` 下的必要文件。
 
-## 可选自动化目录
+## 新 skill 产物目录
 
-只有用户明确要求落盘时，才按以下结构保存迭代记录：
+产物目录固定为一个新 skill。默认在当前 `.art-skills` workspace 下创建，名称使用小写字母、数字和连字符，例如 `<style-name>-style-generator/`。如果用户给了明确名称，按用户名称规范化为 hyphen-case。
 
 ```text
-<style-workdir>/
-  reference.png
-  iterations.yaml
-  iteration_01_prompt.txt
-  iteration_01_face_closeup.png
-  iteration_01_full_body.png
-  iteration_01_environment.png
-  iteration_01_object_closeup_in_environment.png
-  iteration_01_review.yaml
-  iteration_02_prompt.txt
-  iteration_02_face_closeup.png
-  iteration_02_full_body.png
-  iteration_02_environment.png
-  iteration_02_object_closeup_in_environment.png
-  iteration_02_review.yaml
-  final_style_prompt.yaml
+<style-name>-style-generator/
+  SKILL.md
+  references/
+    source_01.png
+    source_02.png
+    source_03.png
+    shared_style_invariants.md
+    router.md
+    face.png
+    face_base_style.md
+    full_body.png
+    full_body_base_style.md
+    environment.png
+    environment_base_style.md
+    object.png
+    object_base_style.md
+    materials/
+      skin.png
+      skin_base_style.md
+      hair.png
+      hair_base_style.md
+      fabric.png
+      fabric_base_style.md
+      leather.png
+      leather_base_style.md
+      metal.png
+      metal_base_style.md
+      glass.png
+      glass_base_style.md
+      plastic.png
+      plastic_base_style.md
+      wood.png
+      wood_base_style.md
+      stone.png
+      stone_base_style.md
+      ceramic.png
+      ceramic_base_style.md
+      paper.png
+      paper_base_style.md
+      liquid.png
+      liquid_base_style.md
+      emissive.png
+      emissive_base_style.md
+      rubber.png
+      rubber_base_style.md
+    negative_prompt.md
+    generation_formula.md
 ```
 
-`iterations.yaml` 记录每轮输入、输出、评分和修订原因，方便回滚到最佳版本。未获用户明确落盘要求时，不创建这些文件。
+如果需要保留迭代过程，可以把迭代记录写入 `references/iteration_notes.md`，但不要默认创建 `iterations.yaml`、`iteration_01_prompt.txt` 这类过程文件。新 skill 的核心是可复用的主体路由 + 材质路由 reference 包，不是完整实验日志。
 
 ## 常见错误
 
@@ -436,28 +777,43 @@ usage_notes:
 9. **只迭代一轮就停止。** 第 1 轮即使分数很高也不能停止；至少跑第 2 轮，用新 prompt 再生成 4 张图复核稳定性。
 10. **使用空泛商业封面精修词。** 不要把本技能列出的禁用精修词写进 `[BASE_STYLE]`、`[LIGHT_COLOR]`、`[COMPOSITION]` 或最终风格提示词；它们会诱导过度高光和塑料感。
 11. **滥用 negative prompt。** 不要写 `not over-detailed background` 这类可正向约束的问题；应改成 `low-detail background` / `simple background` / `minimalistic background` 等正向表达。
-12. **默认写文件。** 确认最终风格提示词后，默认只在对话中输出；没有用户明确要求时，不写 `final_style_prompt.yaml`，不更新项目文件。
+12. **只交付低信息 prompt。** 单条 `[BASE_STYLE]` 太容易丢失参考风格；最终必须产出新 skill 文件夹，并包含 4 类 reference 图和对应 `*_base_style.md`。
 13. **只看整体好不好看。** 必须按媒介、渲染、线条、笔触、色彩、明暗、材质、细节密度逐项对比。
 14. **默认归为 2.5D。** 看到半写实人物就写 `semi-real 2.5D digital painting` 是严重错误。必须先区分纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影；参考图是纯3D时，任何 2.5D/2D/digital painting 候选都应直接判失败。
+15. **把 references 和 examples 做成两套。** 新 skill 只需要 `references/`；迭代产出的 4 张锚点图就是后续生成的 reference，不要再创建重复的 `examples/` 目录。
+16. **创建单独 specs 目录。** 不要创建 `specs/`；共享不变量写入 `references/shared_style_invariants.md`，各主体类型风格写入 `references/*_base_style.md`。
+17. **让所有任务读取所有风格文件。** 新 skill 必须先 route；生成环境时不要读取人脸/全身风格文件，生成物品时不要读取人物风格文件。
+18. **只增加主体锚点，不做材质锚点。** 更多人脸/全身/环境/物体图不能替代材质参考；必须生成材质/纹理锚点来约束木头、石头、金属、玻璃、塑料、皮肤、布料等跨内容迁移。
+19. **把材质词塞进通用 base。** 金属、玻璃、皮肤、木头等应进入 `references/materials/*_base_style.md`，由 router 按画面实际材质读取，不要全部写进 `shared_style_invariants.md`。
 
 ## 交付前检查
 
 - [ ] 触发词 `distill` / `extract` / `提取` / `萃取` / `反推` 等已按本技能处理，而不是按普通看图提示词处理。
 - [ ] 已读取 `prompt_formula.md`。
 - [ ] 已先判定大类媒介：纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影；没有默认写成 2.5D 或 2D。
+- [ ] 已拆分 `style_signal_split`：可迁移风格不变量、条件性风格变量、不可迁移内容特征。
+- [ ] `[BASE_STYLE]` 不只是制作管线词；已包含形状语言、比例理想化、边缘层级、明暗语法、材质细节频率、色彩配比、镜头后期和完成度边界。
 - [ ] 如果目标是纯3D渲染，`[BASE_STYLE]` 使用 3D/CG/PBR/SSS/strand hair/DOF/material response 语言，且 `[NEGATIVE]` 排除了 2D illustration / digital painting / painterly / lineart / cel shading / 2.5D look。
 - [ ] 已实际查看参考图和 4 张候选图。
 - [ ] 至少完成 2 轮迭代；第 1 轮不能作为最终停止轮。
 - [ ] 每轮至少真实生成了 4 张候选图：人物脸部特写、人物全身、纯环境、物品近景（有环境）；若未生成，已明确报告工具阻塞原因。
 - [ ] 4 张候选图全部通过纯美术风格一致性检查；任一不通过则继续迭代。
-- [ ] 没有只输出初版提示词就结束。
+- [ ] 没有只输出初版提示词或最终单条 prompt 就结束。
+- [ ] 已创建新风格生成 skill 文件夹，而不是只在对话中贴提示词。
+- [ ] 新 skill 含 `SKILL.md` 和 `references/`，没有重复的 `examples/` 或单独 `specs/`。
+- [ ] `references/` 中有原始参考图、`shared_style_invariants.md`、`router.md`、4 张锚点 reference 图、4 个对应 `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
+- [ ] `references/materials/` 中有默认材质/纹理锚点和对应 `*_base_style.md`：skin、hair、fabric、leather、metal、glass、plastic、wood、stone、ceramic、paper、liquid、emissive、rubber；参考图特有关键材质已追加。
+- [ ] 每个 `*_base_style.md` 只包含该主体类型适用的风格信息；环境/物品文件没有皮肤、头发、五官等人物专属词。
+- [ ] 每个 `materials/*_base_style.md` 只包含该材质适用的反射/粗糙度、纹理频率、边缘高光、磨损细节和色彩关系。
+- [ ] 新 skill 的 `router.md` 会根据用户目标只读取相关主体类型的 reference 和 base_style，并根据画面实际材质追加读取相关 material reference 和 material base_style。
 - [ ] 最终 `[BASE_STYLE]` 只包含纯美术风格词。
 - [ ] 没有主体、场景、服装、道具、景别、日夜、世界观、剧情词污染。
 - [ ] 没有使用本技能列出的禁用空泛商业封面精修词。
 - [ ] 没有把可用正向提示词约束的问题写进 `[NEGATIVE]`；例如不要写 `not over-detailed background`，应写 `low-detail/simple/minimalistic background`。
 - [ ] 每轮修订都有可见风格差距依据。
 - [ ] 大类媒介错误时已先修正媒介词，而不是用脸、配色、细节继续补分。
+- [ ] 大类媒介正确但不像同一画风时，已优先修正风格指纹，而不是继续堆 `PBR / SSS / ray-traced / high-end render`。
 - [ ] `neg` 只包含高频错误倾向，短而具体。
 - [ ] 没有未经用户明确要求提交图片生成任务。
-- [ ] 没有未经用户明确要求写入最终风格提示词文件或修改项目文档。
-- [ ] 输出了最终 `[BASE_STYLE]` / `[NEGATIVE]` 和适用说明。
+- [ ] 没有创建 README、CHANGELOG、INSTALLATION_GUIDE 等无关文档。
+- [ ] 输出了新 skill 路径、文件清单、router 摘要和必要适用说明。
