@@ -16,3 +16,11 @@
 6. [`video-prompt-director`](video-prompt-director/SKILL.md)：视频导演；把镜头组或场景段落转成可执行视频提示词。
 7. [`manga-creation-pipeline`](manga-creation-pipeline/SKILL.md)：漫画导演；发展漫画章节、分格页和漫画图任务。
 8. [`style-prompt-iteration`](style-prompt-iteration/SKILL.md)：Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代；用户说 distill、extract、提取、萃取、反推风格时触发；按 `prompt_formula.md` 反推，至少迭代2轮，每轮生成脸部特写、人物全身、纯环境至少3张候选图，严格对比参考图风格指纹，尤其检查2D/3D混合、头发塑料高光和特殊风格化处理；除非原始参考图就是如此，否则头发塑料高光必须判失败，全部合格且已过第2轮才停止。
+
+# Contact Me 联系我
+![](./.docs/wechat.svg)
+微信
+
+# Sponsor Me 打赏感谢我
+![](./.docs/pay.webp)
+微信打赏
