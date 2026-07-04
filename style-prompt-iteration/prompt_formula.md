@@ -18,11 +18,11 @@ modern Japanese editorial anime illustration, painterly digital painting, matte 
 simple test subject for this iteration, plain neutral background, simple readable space
 
 [LIGHT_COLOR]
-soft diffused light, low-to-medium contrast, muted blue-gray palette with warm coral accents
+soft global illumination, broad area light, large diffused light source, controlled highlight rolloff, preserved highlight color detail, low-to-medium contrast, muted blue-gray palette with warm coral accents
 
 [COMPOSITION]
 clear readable framing
 
 [NEGATIVE]
-photorealistic skin, glossy plastic hair, wet specular hair, hard vector lineart
+overexposed highlights, blown-out whites, oily wet shine, greasy specular reflections, point-light hotspots, sparkle pollution, harsh flash lighting, uncontrolled glossy reflections, glossy plastic hair, wet specular hair, hard vector lineart
 ```
