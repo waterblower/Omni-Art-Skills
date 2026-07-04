@@ -1,13 +1,13 @@
 ---
 name: style-prompt-iteration
-description: Codex/ChatGPT 专用的纯美术风格提取、萃取、蒸馏和迭代技能。触发后必须先判定参考图媒介大类（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），再真实生成候选图、读图对比、自我修正，至少完成2轮4类验证图迭代，并独立并发生成16张材质/纹理锚点图，最终产出可复用的新风格 skill 文件夹。禁止只输出提示词。
-version: 1.3.1
+description: Codex/ChatGPT 专用的纯美术风格获取、提取、萃取、蒸馏和迭代技能。用户说 get style、distill style、extract style、style extraction、style distillation、获取风格、提取风格、萃取画风、反推风格等任何中英文类似意图时触发完整 pipeline：先判定参考图媒介大类（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），再真实生成候选图、读图对比、自我修正，至少完成2轮4类验证图迭代，并独立并发生成16张材质/纹理锚点图，最终产出可复用的新风格 skill 文件夹。禁止只输出提示词或只生成 prompt 文件。
+version: 1.3.2
 author: Hermes Agent
 license: MIT
 metadata:
   hermes:
-    tags: [image-style, prompt-iteration, art-direction, image-generation, style-matching, style-extraction, style-distillation, extract-style, distill-style]
-    aliases: [style-extract, style-distill, art-style-extraction, art-style-distillation, extract-style-prompt, distill-style-prompt, 提取美术风格, 萃取画风, 反推风格, 获得风格提示词]
+    tags: [image-style, prompt-iteration, art-direction, image-generation, style-matching, style-extraction, style-distillation, get-style, extract-style, distill-style]
+    aliases: [get-style, get-style-prompt, style-get, style-extract, style-distill, art-style-extraction, art-style-distillation, extract-style-prompt, distill-style-prompt, 获取风格, 获得风格, 获取画风, 获得画风, 提取风格, 提取美术风格, 萃取画风, 蒸馏风格, 反推风格, 获得风格提示词]
     related_skills: [image-art-direction]
 ---
 
@@ -15,7 +15,12 @@ metadata:
 
 ## 0. 不可跳过的执行规则
 
-当用户要求 `distill style`、`extract style`、`style extraction`、`style distillation`、`提取美术风格`、`萃取画风`、`反推风格`、`获得风格提示词`，且上下文包含参考图/风格图时，本技能必须进入图片迭代模式：
+当用户要求获取、提取、萃取、蒸馏、反推参考图风格，且上下文包含参考图/风格图时，本技能必须进入完整图片迭代模式。触发词包括但不限于：
+
+- English: `get style`, `get the style`, `get style prompt`, `get art style`, `extract style`, `distill style`, `style extraction`, `style distillation`, `derive style`, `reverse style`, `create style skill`, `make style skill`, `style from reference`.
+- 中文：`获取风格`、`获得风格`、`获取画风`、`获得画风`、`提取风格`、`提取美术风格`、`萃取画风`、`蒸馏风格`、`反推风格`、`获得风格提示词`、`从参考图获得风格`、`生成风格技能`。
+
+`get style` 不是轻量触发词，不允许只生成 prompt 文件；它等同于要求执行完整 pipeline：
 
 1. 读取 `./style-prompt-iteration/prompt_formula.md`。
 2. 查看参考图并判定大类媒介。
@@ -26,6 +31,8 @@ metadata:
 7. 落盘一个新风格生成 skill 文件夹。
 
 禁止只输出提示词、只做文字分析、只生成 1 张图、只跑 1 轮、把“建议下一步生成”当作完成。若没有图片生成工具、工具失败、额度不足或参考图不可读，必须明确报告阻塞，并只把初版 prompt 标为临时草稿。
+
+路径写法硬约束：任何记录、日志、YAML、Markdown、最终回复和新 skill 文件中，只能写相对路径；禁止写全局/绝对路径，例如 `/Users/...`、`/private/...`、`C:\...`、`file://...`。已生成文件也必须用相对路径引用。
 
 例外：如果当前任务是在维护/编辑本技能文件本身，不要生成候选图。
 
@@ -326,7 +333,7 @@ material_routes:
 
 ```yaml
 generated_style_skill:
-  path: ...
+  path: <relative path only>
   skill_name: ...
   files_ready: true
 fit_notes:
@@ -354,3 +361,4 @@ router_summary:
 - 任一候选图未通过媒介、风格指纹、光照质量或全身生命力门槛时已继续迭代。
 - 已生成 16 张独立材质/纹理锚点；工具支持时已并发；没有宫格、合集、atlas、contact sheet 或裁切图。
 - 已创建新 skill 文件夹，含 `SKILL.md`、`references/router.md`、`shared_style_invariants.md`、4 张主体 reference、16 张材质 reference、各自 `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
+- 所有记录、产物文件和最终回复中的路径均为相对路径，没有全局/绝对路径。
