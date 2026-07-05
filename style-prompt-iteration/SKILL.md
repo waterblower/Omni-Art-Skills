@@ -1,7 +1,7 @@
 ---
 name: style-prompt-iteration
 description: Codex/ChatGPT 专用的纯美术风格获取、提取、萃取、蒸馏和迭代技能。用户说 get style、distill style、extract style、style extraction、style distillation、获取风格、提取风格、萃取画风、反推风格等任何中英文类似意图时触发完整 pipeline：先判定参考图媒介大类（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），再真实生成候选图、读图对比、自我修正，至少完成2轮4类验证图迭代，并独立并发生成16张材质/纹理锚点图，最终产出可复用的新风格 skill 文件夹。禁止只输出提示词或只生成 prompt 文件。
-version: 1.3.2
+version: 1.4.0
 author: Hermes Agent
 license: MIT
 metadata:
@@ -230,7 +230,7 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
 
 ## 9. 最终新 skill 产物
 
-默认必须在当前 `.art-skills` workspace 下创建一个新 skill 文件夹，名称用 hyphen-case，例如 `<style-name>-style-generator/`。不要只在对话中贴 prompt。不要创建 `examples/`、`specs/`、README、CHANGELOG、INSTALLATION_GUIDE。
+默认必须在当前 agent 运行的 working directory（`pwd`）下创建一个新 skill 文件夹，名称用 hyphen-case，例如如果当前 `pwd` 是 `X`，最终产物应放在 `X/<style-name>-style-generator/`。不要只在对话中贴 prompt。不要创建 `examples/`、`specs/`、README、CHANGELOG、INSTALLATION_GUIDE。
 
 目录结构：
 
