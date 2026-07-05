@@ -8,14 +8,14 @@
 
 ## 技能列表
 
-1. [`creative-production-pipeline`](creative-production-pipeline/SKILL.md)：总制片 / 总导演；从故事、设定或分集大纲组织完整 AI 内容生产流水线。
-2. [`script-to-shot-table`](script-to-shot-table/SKILL.md)：分镜导演；把剧本、梗概、广告脚本或小说段落转为镜头组。
-3. [`image-art-direction`](image-art-direction/SKILL.md)：美术指导；制定图片风格、分析参考图、审查候选图和生成后质检。
-4. [`character-reference-pipeline`](character-reference-pipeline/SKILL.md)：角色资产导演；建立正脸、背面、立绘、服装状态等标准角色资产。
-5. [`image-generation-plan`](image-generation-plan/SKILL.md)：图片制片 / 任务编排；把镜头组、制作包和资产整理为逐张图片生成 TOML 任务。
-6. [`video-prompt-director`](video-prompt-director/SKILL.md)：视频导演；把镜头组或场景段落转成可执行视频提示词。
-7. [`manga-creation-pipeline`](manga-creation-pipeline/SKILL.md)：漫画导演；发展漫画章节、分格页和漫画图任务。
-8. [`style-prompt-iteration`](style-prompt-iteration/SKILL.md)：Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代；用户说 distill、extract、提取、萃取、反推风格时触发；按 `prompt_formula.md` 反推，至少迭代2轮，每轮生成脸部特写、人物全身、纯环境至少3张候选图，严格对比参考图风格指纹，尤其检查2D/3D混合、头发塑料高光和特殊风格化处理；除非原始参考图就是如此，否则头发塑料高光必须判失败，全部合格且已过第2轮才停止。
+1. [creative-production-pipeline](creative-production-pipeline/SKILL.md)：总制片 / 总导演；从故事、设定或分集大纲组织完整 AI 内容生产流水线。
+2. [script-to-shot-table](script-to-shot-table/SKILL.md)：分镜导演；把剧本、梗概、广告脚本或小说段落转为镜头组。
+3. [image-art-direction](image-art-direction/SKILL.md)：美术指导；制定图片风格、分析参考图、审查候选图和生成后质检。
+4. [character-reference-pipeline](character-reference-pipeline/SKILL.md)：角色资产导演；建立正脸、背面、立绘、服装状态等标准角色资产。
+5. [image-generation-plan](image-generation-plan/SKILL.md)：图片制片 / 任务编排；把镜头组、制作包和资产整理为逐张图片生成 TOML 任务。
+6. [video-prompt-director](video-prompt-director/SKILL.md)：视频导演；把镜头组或场景段落转成可执行视频提示词。
+7. [manga-creation-pipeline](manga-creation-pipeline/SKILL.md)：漫画导演；发展漫画章节、分格页和漫画图任务。
+8. [style-prompt-iteration](style-prompt-iteration/SKILL.md)：Codex/ChatGPT 专用的纯美术风格提取/萃取/蒸馏/迭代；用户说 distill、extract、提取、萃取、反推风格时触发；按 [prompt_formula.md](style-prompt-iteration/prompt_formula.md) 反推，至少迭代2轮，每轮生成脸部特写、人物全身、纯环境至少3张候选图，严格对比参考图风格指纹，尤其检查2D/3D混合、头发塑料高光和特殊风格化处理；除非原始参考图就是如此，否则头发塑料高光必须判失败，全部合格且已过第2轮才停止。
 
 # Contact Me 联系我
 ![](./.docs/wechat.svg)

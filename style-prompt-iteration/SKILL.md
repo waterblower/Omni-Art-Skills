@@ -38,7 +38,7 @@ metadata:
 
 ## 1. Prompt 公式
 
-按 `prompt_formula.md` 拼装：
+按 [prompt_formula.md](prompt_formula.md) 拼装：
 
 ```text
 [BASE_STYLE]
@@ -295,7 +295,7 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
 - `environment_base_style.md`：只写空间、建筑/自然材质、背景色块、光影层级、环境细节频率；不得写皮肤/头发/五官。
 - `object_base_style.md`：只写物品轮廓、材质、边缘、反射折射、细节密度、放置环境统一性；不得写人体/皮肤/头发/五官。
 
-新 skill 的 `SKILL.md` 必须很短：指示读取 `references/router.md`，按主体 route 和材质 route 选择相关 reference 与 `*_base_style.md`，再组合 `shared_style_invariants.md`、`negative_prompt.md`、`generation_formula.md` 和用户需求。
+新 skill 的 [SKILL.md](SKILL.md) 必须很短：指示读取 `references/router.md`，按主体 route 和材质 route 选择相关 reference 与 `*_base_style.md`，再组合 `shared_style_invariants.md`、`negative_prompt.md`、`generation_formula.md` 和用户需求。
 
 `router.md` 必须支持：
 
@@ -351,7 +351,7 @@ router_summary:
 
 ## 11. 交付前最小检查
 
-- 已读取 `prompt_formula.md`。
+- 已读取 [prompt_formula.md](prompt_formula.md)。
 - 已判定大类媒介，且没有默认写成 2.5D。
 - 已记录 `style_signal_split`。
 - `[BASE_STYLE]` 包含风格指纹，不只是管线词；没有内容污染。
@@ -360,5 +360,5 @@ router_summary:
 - 至少完成 2 轮，每轮真实生成并检查 4 张候选图。
 - 任一候选图未通过媒介、风格指纹、光照质量或全身生命力门槛时已继续迭代。
 - 已生成 16 张独立材质/纹理锚点；工具支持时已并发；没有宫格、合集、atlas、contact sheet 或裁切图。
-- 已创建新 skill 文件夹，含 `SKILL.md`、`references/router.md`、`shared_style_invariants.md`、4 张主体 reference、16 张材质 reference、各自 `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
+- 已创建新 skill 文件夹，含 [SKILL.md](SKILL.md)、`references/router.md`、`shared_style_invariants.md`、4 张主体 reference、16 张材质 reference、各自 `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
 - 所有记录、产物文件和最终回复中的路径均为相对路径，没有全局/绝对路径。
