@@ -334,61 +334,62 @@ name 必须与用户输入语言一致：用户用英文提出风格需求时使
 `X/<style-name>-style/` 或同语言等价名称下。不要只在对话中贴 prompt。不要创建
 `examples/`、`specs/`、README、CHANGELOG、INSTALLATION_GUIDE。
 
-目录结构：
+创建方式硬约束：不要手工从零搭目录。必须把本技能自带的 `template/` 文件夹整体复制到目标路径，并把复制后的文件夹重命名为合理的风格名。`template/` 是唯一结构参考；复制后将空 `.md` 文件替换为真实内容，将空 `.png` 占位文件替换为真实图片。若实际输入图超过 `original/image1.png`、`image2.png`、`image3.png`，可在 `original/` 下继续追加同语言/同序列命名的真实图片；若迭代超过 `iteration2/`，可继续追加 `iterations/iteration3/` 等目录。除这些“追加真实输入/迭代产物”的情况外，不要改变模板目录结构。
 
-```text
+### 目录结构：
+```
 <style-name>-style/
-  SKILL.md
-  references/
-    shared_style_invariants.md
-    router.md
-    face.png
-    face_base_style.md
-    full_body.png
-    full_body_base_style.md
-    environment.png
-    environment_base_style.md
-    object.png
-    object_base_style.md
-    negative_prompt.md
-    generation_formula.md
-    materials/
-      skin.png
-      skin_base_style.md
-      hair.png
-      hair_base_style.md
-      fabric.png
-      fabric_base_style.md
-      leather.png
-      leather_base_style.md
-      metal.png
-      metal_base_style.md
-      glass.png
-      glass_base_style.md
-      plastic.png
-      plastic_base_style.md
-      wood.png
-      wood_base_style.md
-      stone.png
-      stone_base_style.md
-      ceramic.png
-      ceramic_base_style.md
-      paper.png
-      paper_base_style.md
-      liquid.png
-      liquid_base_style.md
-      emissive.png
-      emissive_base_style.md
-      rubber.png
-      rubber_base_style.md
-      makeup.png
-      makeup_base_style.md
-      foliage.png
-      foliage_base_style.md
+    SKILL.md
+    references/
+        shared_style_invariants.md
+        router.md
+        face_base_style.md
+        full_body_base_style.md
+        environment_base_style.md
+        object_base_style.md
+        negative_prompt.md
+        generation_formula.md
+        materials/
+            skin.png
+            skin_base_style.md
+            hair.png
+            hair_base_style.md
+            fabric.png
+            fabric_base_style.md
+            leather.png
+            leather_base_style.md
+            metal.png
+            metal_base_style.md
+            glass.png
+            glass_base_style.md
+            plastic.png
+            plastic_base_style.md
+            wood.png
+            wood_base_style.md
+            stone.png
+            stone_base_style.md
+            ceramic.png
+            ceramic_base_style.md
+            paper.png
+            paper_base_style.md
+            liquid.png
+            liquid_base_style.md
+            emissive.png
+            emissive_base_style.md
+            rubber.png
+            rubber_base_style.md
+            makeup.png
+            makeup_base_style.md
+            foliage.png
+            foliage_base_style.md
+    # archival only: original input images, never loaded by router during normal use
     original/
-        # archival only: original input images, never loaded by router during normal use
+        image1.png
+        image2.png # if any
+        image3.png # if any
+        etc.
+    # archival only: all output images generated during iterations, never loaded by router during normal use
     iterations/
-        # archival only: all output images generated during iterations, never loaded by router during normal use
         iteration1/
             face.png
             full_body.png
@@ -397,11 +398,14 @@ name 必须与用户输入语言一致：用户用英文提出风格需求时使
         iteration2/ # if any
 ```
 
-4 张主体 reference 必须来自真实迭代产出，并复制到
-`references/face.png`、`references/full_body.png`、`references/environment.png`、`references/object.png`
-作为可路由的精选 reference。`references/original/` 和 `references/iterations/`
-只保存过程归档：它们必须随 skill 文件夹交付，但在该 skill 被用于生成新图时不得被
-`SKILL.md`、`router.md` 或默认使用流程读取、引用或纳入风格判断。
+4 类主体风格描述必须来自真实迭代产出，但最后一轮的
+`face.png`、`full_body.png`、`environment.png`、`object.png` 不得复制到
+`references/`，只能保存在对应的 `iterations/iteration*/` 归档目录中。
+`original/` 和 `iterations/` 只保存过程归档：它们必须随 skill 文件夹交付，但在该
+skill 被用于生成新图时不得被 `SKILL.md`、`router.md` 或默认使用流程读取、引用或纳入风格判断。
+新 skill 的生成流程只能读取 `references/` 下的文件；主体路由只使用
+`face_base_style.md`、`full_body_base_style.md`、`environment_base_style.md`、`object_base_style.md`
+等文本风格描述，材质路由可使用 `references/materials/*.png` 和对应 `*_base_style.md`。
 
 - `face_base_style.md`：只写脸、皮肤、五官、发丝、面部边缘、脸部细节频率。
 - `full_body_base_style.md`：只写人体比例、形体体积、姿态受力、衣料服从身体、全身材质分区。
@@ -409,12 +413,12 @@ name 必须与用户输入语言一致：用户用英文提出风格需求时使
 - `object_base_style.md`：只写物品轮廓、材质、边缘、反射折射、细节密度、放置环境统一性；不得写人体/皮肤/头发/五官。
 
 新 skill 的 [SKILL.md](SKILL.md) 必须很短：只作为入口，指示读取
-`references/router.md`，按主体 route 和材质 route 选择相关精选 reference 与
+`references/router.md`，按主体 route 和材质 route 只选择 `references/` 下的相关文件与
 `*_base_style.md`，再组合
 `shared_style_invariants.md`、`negative_prompt.md`、`generation_formula.md`
 和用户需求。复杂风格内容必须放在 `references/`，不要塞回入口 `SKILL.md`。入口和
-router 必须明确排除 `references/original/` 与
-`references/iterations/`，这些过程图只用于审计和复盘，不能参与新图生成。
+router 必须明确排除 skill 根目录下的 `original/` 与
+`iterations/`，这些过程图只用于审计和复盘，不能参与新图生成。
 
 `router.md` 必须支持：
 
@@ -486,7 +490,7 @@ router_summary:
 ```
 
 不要输出冗长实验日志，除非用户要求。若保留过程文件，只能写
-`references/iteration_notes.md`。
+`iterations/iteration_notes.md`，不得放进 `references/`。
 
 ## 11. 交付前最小检查
 
@@ -505,11 +509,12 @@ router_summary:
   或裁切图。
 - 已创建全新的、未覆盖既有目录的 skill 文件夹；文件夹名和 skill name
   与用户输入语言一致。
+- 已将本技能自带的 `template/` 整体复制到目标路径并重命名；所有空 `.md` 已替换为真实内容，所有空 `.png` 占位文件已替换为真实图片。
 - 已创建新 skill 文件夹，含
   [SKILL.md](SKILL.md)、`references/router.md`、`shared_style_invariants.md`、4
-  张精选主体 reference、16 张材质 reference、各自
+  个主体 `*_base_style.md`、16 张材质 reference、各自
   `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
-- 已保存原始输入图到 `references/original/`，并保存每轮迭代输出图到
-  `references/iterations/`；入口 SKILL 和 router
-  明确排除这些过程图，正常生成新图时不会读取或使用它们。
+- 已保存原始输入图到根目录 `original/`，并保存每轮迭代输出图到根目录
+  `iterations/`；入口 SKILL 和 router 明确排除这些过程图，正常生成新图时不会读取或使用它们。
+- `references/` 下没有保存 `face.png`、`full_body.png`、`environment.png`、`object.png`；这些候选图只存在于 `iterations/`。
 - 所有记录、产物文件和最终回复中的路径均为相对路径，没有全局/绝对路径。
