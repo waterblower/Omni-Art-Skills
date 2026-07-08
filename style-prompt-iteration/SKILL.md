@@ -1,6 +1,6 @@
 ---
 name: style-prompt-iteration
-description: Codex/ChatGPT 专用的纯美术风格获取、提取、萃取、蒸馏和迭代技能。用户说 get style、distill style、extract style、style extraction、style distillation、获取风格、提取风格、萃取画风、反推风格等任何中英文类似意图时触发完整 pipeline：先判定参考图媒介大类（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），再真实生成候选图、读图对比、自我修正，至少完成2轮4类验证图迭代，并独立并发生成16张材质/纹理锚点图，最终产出可复用的新风格 skill 文件夹。禁止只输出提示词或只生成 prompt 文件。
+description: Codex/ChatGPT 专用的纯美术风格获取、提取、萃取、蒸馏和迭代技能。用户说 get style、distill style、extract style、style extraction、style distillation、获取风格、提取风格、萃取画风、反推风格等任何中英文类似意图时触发完整 pipeline：先判定参考图媒介大类（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），再真实生成候选图、读图对比、自我修正，至少完成2轮4类验证图迭代，并生成16张独立材质/纹理锚点图（工具支持时并发），最终产出可复用的新风格 skill 文件夹。禁止只输出提示词或只生成 prompt 文件。
 version: 1.4.0
 author: Hermes Agent
 license: MIT
@@ -32,7 +32,7 @@ metadata:
 
 禁止只输出提示词、只做文字分析、只生成 1 张图、只跑 1 轮、把“建议下一步生成”当作完成。若没有图片生成工具、工具失败、额度不足或参考图不可读，必须明确报告阻塞，并只把初版 prompt 标为临时草稿。
 
-路径写法硬约束：任何记录、日志、YAML、Markdown、最终回复和新 skill 文件中，只能写相对路径；禁止写全局/绝对路径，例如 `/Users/...`、`/private/...`、`C:\...`、`file://...`。已生成文件也必须用相对路径引用。
+路径写法硬约束：任何记录、日志、YAML、Markdown、最终回复和新 skill 文件中，只能写相对路径；禁止写全局/绝对路径，例如 `/Users/...`、`/private/...`、`C:\...`、`file://...`。已生成文件也必须用相对路径引用。外部图片工具返回的临时 `http(s)://...` URL 只可用于下载或检查；落盘记录、最终回复和新 skill 文件必须记录下载后的相对路径，不记录临时 URL。
 
 例外：如果当前任务是在维护/编辑本技能文件本身，不要生成候选图。
 
@@ -217,7 +217,7 @@ stop: false
 
 ## 8. 16 张材质/纹理锚点
 
-最终新 skill 必须包含 16 张默认材质/纹理 reference，每个材质是一个独立图片生成任务。工具支持并发时应并发提交 16 个独立请求；如果不支持并发则顺序生成。禁止 4x4 宫格、contact sheet、atlas、sprite sheet、大图合集、先生成大图再 crop。每张图必须有独立 prompt、独立输出路径/URL、独立检查记录。
+最终新 skill 必须包含 16 张默认材质/纹理 reference，每个材质是一个独立图片生成任务。工具支持并发时应并发提交 16 个独立请求；如果不支持并发则顺序生成。禁止 4x4 宫格、contact sheet、atlas、sprite sheet、大图合集、先生成大图再 crop。每张图必须有独立 prompt、独立相对输出路径、独立检查记录；如果工具只返回临时 URL，必须下载到相对路径后再记录。
 
 默认材质：
 
@@ -230,27 +230,32 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
 
 ## 9. 最终新 skill 产物
 
-默认必须在当前 agent 运行的 working directory（`pwd`）下创建一个新 skill 文件夹，名称用 hyphen-case，例如如果当前 `pwd` 是 `X`，最终产物应放在 `X/<style-name>-style-generator/`。不要只在对话中贴 prompt。不要创建 `examples/`、`specs/`、README、CHANGELOG、INSTALLATION_GUIDE。
+默认必须在当前 agent 运行的 working directory（`pwd`）下创建一个新 skill 文件夹，名称用 hyphen-case，例如如果当前 `pwd` 是 `X`，最终产物应放在 `X/<style-name>-style/`。不要只在对话中贴 prompt。不要创建 `examples/`、`specs/`、README、CHANGELOG、INSTALLATION_GUIDE。
 
 目录结构：
 
 ```text
-<style-name>-style-generator/
+<style-name>-style/
   SKILL.md
   references/
-    source_01.png
-    source_02.png
-    source_03.png
     shared_style_invariants.md
     router.md
-    face.png
     face_base_style.md
-    full_body.png
     full_body_base_style.md
-    environment.png
     environment_base_style.md
-    object.png
     object_base_style.md
+    negative_prompt.md
+    generation_formula.md
+    original/
+        # put original input images here
+    iterations/
+        # put iteration output images here
+        iteration1/
+            face.png
+            full_body.png
+            environment.png
+            object.png
+        iteration2/ # if any 
     materials/
       skin.png
       skin_base_style.md
@@ -284,8 +289,6 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
       makeup_base_style.md
       foliage.png
       foliage_base_style.md
-    negative_prompt.md
-    generation_formula.md
 ```
 
 4 张主体 reference 必须来自真实迭代产出：
@@ -295,7 +298,7 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
 - `environment_base_style.md`：只写空间、建筑/自然材质、背景色块、光影层级、环境细节频率；不得写皮肤/头发/五官。
 - `object_base_style.md`：只写物品轮廓、材质、边缘、反射折射、细节密度、放置环境统一性；不得写人体/皮肤/头发/五官。
 
-新 skill 的 [SKILL.md](SKILL.md) 必须很短：指示读取 `references/router.md`，按主体 route 和材质 route 选择相关 reference 与 `*_base_style.md`，再组合 `shared_style_invariants.md`、`negative_prompt.md`、`generation_formula.md` 和用户需求。
+新 skill 的 [SKILL.md](SKILL.md) 必须很短：只作为入口，指示读取 `references/router.md`，按主体 route 和材质 route 选择相关 reference 与 `*_base_style.md`，再组合 `shared_style_invariants.md`、`negative_prompt.md`、`generation_formula.md` 和用户需求。复杂风格内容必须放在 `references/`，不要塞回入口 `SKILL.md`。
 
 `router.md` 必须支持：
 
@@ -358,7 +361,7 @@ router_summary:
 - `[LIGHT_COLOR]` 使用柔和全局光 / 大面积面光源 / 受控高光；绘画媒介转译为大色块和柔和笔触。
 - `[NEGATIVE]` 含过曝、油亮、点光源热点、闪点污染稳定负面项。
 - 至少完成 2 轮，每轮真实生成并检查 4 张候选图。
-- 任一候选图未通过媒介、风格指纹、光照质量或全身生命力门槛时已继续迭代。
+- 任一候选图未通过媒介、风格指纹或光照质量门槛时已继续迭代；全身候选图未通过 `full_body_life_gate` 时已继续迭代。
 - 已生成 16 张独立材质/纹理锚点；工具支持时已并发；没有宫格、合集、atlas、contact sheet 或裁切图。
 - 已创建新 skill 文件夹，含 [SKILL.md](SKILL.md)、`references/router.md`、`shared_style_invariants.md`、4 张主体 reference、16 张材质 reference、各自 `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
 - 所有记录、产物文件和最终回复中的路径均为相对路径，没有全局/绝对路径。

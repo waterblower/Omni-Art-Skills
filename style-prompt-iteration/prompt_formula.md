@@ -10,6 +10,8 @@
 
 ## Example
 
+This example is illustrative only. Do not default to anime, painterly, 2D illustration, or any other medium family when the reference `macro_medium` is 3D render, photography, hybrid, or another category.
+
 ```text
 [BASE_STYLE]
 modern Japanese editorial anime illustration, painterly digital painting, matte color blocks, loose hand-painted texture, thin sketchy contour lines, soft blended shading, muted cinematic palette, subtle grain
