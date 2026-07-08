@@ -252,6 +252,10 @@ negative”的一般原则限制。
 `simple background` / `low-detail background` 替代
 `not over-detailed background`。例外是第 4 节的过曝/油亮/热点稳定负面项。
 
+所有风格 reference 文件都必须先写 positive constraints，再写 negative constraints。
+凡是能用正向约束表达的内容，不要再写成负向约束：用 `low detail`，不要写
+`not high detail`；用 `high detail`，不要写 `not low detail`。负向约束只保留真正的失败模式、污染项或工具常见错误。
+
 ## 6. 两轮四图迭代
 
 每轮必须生成 4 张独立候选图，使用同一版风格 prompt，测试风格跨内容迁移：
@@ -455,6 +459,7 @@ skill 被用于生成新图时不得被 `SKILL.md`、`router.md` 或默认使用
 `face_base_style.md`、`full_body_base_style.md`、`environment_base_style.md`、`object_base_style.md`
 等文本风格描述，材质路由可使用 `references/materials/*.png` 和对应 `*_base_style.md`。
 
+- `shared_style_invariants.md`：必须是简单 Markdown，不要写 YAML、frontmatter、JSON、表格或配置式键值结构。先写正向约束，再写负向约束；正向约束应包含可迁移的媒介、渲染/绘制技法、材质处理、色彩系统、光照质量、边缘层级和完成度。负向约束只写正向约束无法充分表达的失败模式；能写成 `low detail` / `high detail` 这类正向词时，不要写 `not high detail` / `not low detail`。
 - `face_base_style.md`：只写脸部的渲染、技法、材质和光照质量，例如面部平面处理、SSS/毛孔/发丝/眼部材质、边缘层级、细节频率、soft global illumination、受控高光；不得写性别、年龄、年龄阶段、身份、表情、吸引力评价、具体脸型内容，也不得写 day/night/daylight/nighttime 或中文日夜时间。
 - `full_body_base_style.md`：只写人体比例、形体体积、姿态受力、衣料服从身体、全身材质分区。
 - `environment_base_style.md`：只写环境的渲染、技法、材质、色彩系统和光照质量，例如空间深度处理、边缘层级、表面材质响应、粗糙度、微纹理、低/高饱和色彩组织、冷暖关系、光质、光源面积、接触阴影；不得写室内/室外、建筑类型、房间类型、地理地点、天气、日夜时间或具体场景内容，也不得写精确颜色名。
@@ -563,6 +568,7 @@ router_summary:
   [SKILL.md](SKILL.md)、`references/router.md`、`shared_style_invariants.md`、4
   个主体 `*_base_style.md`、16 张材质 reference、各自
   `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
+- `shared_style_invariants.md` 是简单 Markdown，不是 YAML/frontmatter/JSON/表格；正向约束在前，负向约束在后，且没有把可正向表达的内容写成 `not ...` 负向约束。
 - `face_base_style.md` / face base prompt 只含脸部渲染、技法、材质和光照质量；没有性别、年龄、年龄阶段、身份、表情、审美评价、day/night/daylight/nighttime 或中文日夜时间。
 - `environment_base_style.md` / environment base prompt 只含环境渲染、技法、材质、色彩系统和光照质量；没有 indoor/outdoor/interior/exterior、建筑/房间/地点类型、天气、day/night/daylight/nighttime、中文室内外/日夜时间或精确颜色名。
 - 已保存原始输入图到根目录 `original/`，并保存每轮迭代输出图到根目录
