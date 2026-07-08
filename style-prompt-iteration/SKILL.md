@@ -334,7 +334,7 @@ name 必须与用户输入语言一致：用户用英文提出风格需求时使
 `X/<style-name>-style/` 或同语言等价名称下。不要只在对话中贴 prompt。不要创建
 `examples/`、`specs/`、README、CHANGELOG、INSTALLATION_GUIDE。
 
-创建方式硬约束：不要手工从零搭目录。必须把本技能自带的 `template/` 文件夹整体复制到目标路径，并把复制后的文件夹重命名为合理的风格名。`template/` 是唯一结构参考；复制后将空 `.md` 文件替换为真实内容，将空 `.png` 占位文件替换为真实图片。若实际输入图超过 `original/image1.png`、`image2.png`、`image3.png`，可在 `original/` 下继续追加同语言/同序列命名的真实图片；若迭代超过 `iteration2/`，可继续追加 `iterations/iteration3/` 等目录。除这些“追加真实输入/迭代产物”的情况外，不要改变模板目录结构。
+创建方式硬约束：不要手工从零搭目录。必须把本技能自带的 `template/` 文件夹整体复制到目标路径，并把复制后的文件夹重命名为合理的风格名。`template/` 是唯一结构参考；复制后将空 `.md` 文件替换为真实内容，将空 `.png` 占位文件替换为真实图片。`original/` 与 `iterations/` 必须按真实数量整理：原始输入图有几张就保留/追加几张，不要固定写死 3 张；实际生成了几轮就保留/追加几个 `iterations/iterationN/` 目录，不要固定写死第 2 轮或第 3 轮。删除没有真实图片对应的占位 `.png` 和空迭代目录。除这些“按真实输入/迭代产物增删归档占位”的情况外，不要改变模板目录结构。
 
 ### 目录结构：
 ```
@@ -384,10 +384,7 @@ name 必须与用户输入语言一致：用户用英文提出风格需求时使
             foliage_base_style.md
     # archival only: original input images, never loaded by router during normal use
     original/
-        image1.png
-        image2.png # if any
-        image3.png # if any
-        etc.
+        image1.png # duplicate/add/remove to match the real number of input images
     # archival only: all output images generated during iterations, never loaded by router during normal use
     iterations/
         iteration1/
@@ -395,7 +392,7 @@ name 必须与用户输入语言一致：用户用英文提出风格需求时使
             full_body.png
             environment.png
             object.png
-        iteration2/ # if any
+        # add iteration2/, iteration3/, ... only when those iterations actually exist
 ```
 
 4 类主体风格描述必须来自真实迭代产出，但最后一轮的
@@ -510,6 +507,7 @@ router_summary:
 - 已创建全新的、未覆盖既有目录的 skill 文件夹；文件夹名和 skill name
   与用户输入语言一致。
 - 已将本技能自带的 `template/` 整体复制到目标路径并重命名；所有空 `.md` 已替换为真实内容，所有空 `.png` 占位文件已替换为真实图片。
+- 已按真实数量整理 `original/` 和 `iterations/`：没有固定保留多余输入图占位，也没有固定保留不存在的第 2 / 第 3 轮迭代目录。
 - 已创建新 skill 文件夹，含
   [SKILL.md](SKILL.md)、`references/router.md`、`shared_style_invariants.md`、4
   个主体 `*_base_style.md`、16 张材质 reference、各自
