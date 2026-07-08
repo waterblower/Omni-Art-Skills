@@ -1,5 +1,6 @@
 ---
 name: style-distill
+version: 1.5
 description: >-
   纯美术风格获取、提取、萃取、蒸馏和迭代技能。Use when the user asks get style,
   distill style, extract style, style extraction, style distillation,
