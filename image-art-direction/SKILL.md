@@ -1,13 +1,13 @@
 ---
 name: image-art-direction
-description: 图片美术指导 / 视觉质检技能。用于选择或审查参考图、判断候选图是否适合进入项目参考链路、复核生成图的内容/画质/风格一致性，并输出“可用 / 只作气氛参考 / 不可用”的明确结论。不要替代 image-generation-plan 的 TOML 编排，也不要替代 style-prompt-iteration 的风格萃取迭代。
+description: 图片美术指导 / 视觉质检技能。用于选择或审查参考图、判断候选图是否适合进入项目参考链路、复核生成图的内容/画质/风格一致性，并输出“可用 / 只作气氛参考 / 不可用”的明确结论。不要替代 image-generation-plan 的 TOML 编排，也不要替代 style-distill 的风格萃取迭代。
 version: 1.1.0
 author: Hermes Agent
 license: MIT
 metadata:
   hermes:
     tags: [art-direction, visual-qa, reference-review, image-review, style-consistency]
-    related_skills: [image-generation-plan, character-reference-pipeline, style-prompt-iteration]
+    related_skills: [image-generation-plan, character-reference-pipeline, style-distill]
 ---
 
 # 图片美术指导 / 视觉质检
@@ -27,7 +27,7 @@ metadata:
 不适用场景：
 
 - 写 TOML 图片生成计划、改 `reference_image_paths`、排任务顺序、标 `# todo/# done`：使用 `image-generation-plan`。
-- 用户要求 extract / distill / 萃取 / 反推画风，并需要迭代生成候选图：使用 `style-prompt-iteration`。
+- 用户要求 extract / distill / 萃取 / 反推画风，并需要迭代生成候选图：使用 `style-distill`。
 - 建立角色源头脸、正反立绘、服装状态图资产流水线：使用 `character-reference-pipeline`。
 
 ## 核心原则
@@ -136,4 +136,4 @@ metadata:
 - [ ] 是否指出不合格图的具体问题，而不是只说“不好”。
 - [ ] 是否避免把视觉 QA 规则和 TOML 编排规则混在一起。
 - [ ] 如果需要修改图片计划，是否切换到 `image-generation-plan` 的规则执行。
-- [ ] 如果需要风格萃取和迭代生成，是否切换到 `style-prompt-iteration`。
+- [ ] 如果需要风格萃取和迭代生成，是否切换到 `style-distill`。

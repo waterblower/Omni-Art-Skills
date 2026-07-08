@@ -1,46 +1,55 @@
 ---
-name: style-prompt-iteration
-description: Codex/ChatGPT 专用的纯美术风格获取、提取、萃取、蒸馏和迭代技能。用户说 get style、distill style、extract style、style extraction、style distillation、获取风格、提取风格、萃取画风、反推风格等任何中英文类似意图时触发完整 pipeline：先判定参考图媒介大类（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），再真实生成候选图、读图对比、自我修正，至少完成2轮4类验证图迭代，并生成16张独立材质/纹理锚点图（工具支持时并发），最终产出可复用的新风格 skill 文件夹。禁止只输出提示词或只生成 prompt 文件。
-version: 1.5.0
+name: style-distill
+description: >-
+  纯美术风格获取、提取、萃取、蒸馏和迭代技能。Use when the user asks get style,
+  distill style, extract style, style extraction, style distillation,
+  get-style-prompt, 获取风格, 提取风格, 萃取画风, 蒸馏风格, 反推风格, or similar
+  Chinese/English intents from reference images. Run the full pipeline:
+  classify the reference medium, generate real candidate images, compare and
+  revise, complete at least 2 rounds of 4 validation images, generate 16
+  independent material/texture anchors when tools allow, and output a reusable
+  new style skill folder. Do not only output prompts or a prompt file.
 metadata:
-  hermes:
-    tags: [
-      image-style,
-      prompt-iteration,
-      art-direction,
-      image-generation,
-      style-matching,
-      style-extraction,
-      style-distillation,
-      get-style,
-      extract-style,
-      distill-style,
-    ]
-    aliases: [
-      get-style,
-      get-style-prompt,
-      style-get,
-      style-extract,
-      style-distill,
-      art-style-extraction,
-      art-style-distillation,
-      extract-style-prompt,
-      distill-style-prompt,
-      获取风格,
-      获得风格,
-      获取画风,
-      获得画风,
-      提取风格,
-      提取美术风格,
-      萃取画风,
-      蒸馏风格,
-      反推风格,
-      获得风格提示词,
-    ]
-    related_skills: [image-art-direction]
+  compatible_with:
+    - codex
+    - hermes
+  tags:
+    - image-style
+    - prompt-iteration
+    - art-direction
+    - image-generation
+    - style-matching
+    - style-extraction
+    - style-distillation
+    - get-style
+    - extract-style
+    - distill-style
+  aliases:
+    - get-style
+    - get-style-prompt
+    - style-get
+    - style-extract
+    - style-distill
+    - style-distillation
+    - art-style-extraction
+    - art-style-distillation
+    - extract-style-prompt
+    - distill-style-prompt
+    - 获取风格
+    - 获得风格
+    - 获取画风
+    - 获得画风
+    - 提取风格
+    - 提取美术风格
+    - 萃取画风
+    - 蒸馏风格
+    - 反推风格
+    - 获得风格提示词
+  related_skills:
+    - image-art-direction
 ---
 
-# 纯美术风格提示词迭代
+# Style Distill / 纯美术风格蒸馏
 
 ## 0. 不可跳过的执行规则
 
@@ -55,7 +64,7 @@ metadata:
 `get style` 不是轻量触发词，不允许只生成 prompt 文件；它等同于要求执行完整
 pipeline：
 
-1. 读取 `./style-prompt-iteration/prompt_formula.md`。
+1. 读取 `./style-distill/prompt_formula.md`。
 2. 查看参考图并判定大类媒介。
 3. 写初版 `[BASE_STYLE]`、`[LIGHT_COLOR]`、`[NEGATIVE]`。
 4. 调用图片生成工具，至少完成 2 轮：每轮 4 张候选图。
