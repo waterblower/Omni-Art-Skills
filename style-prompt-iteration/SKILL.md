@@ -1,9 +1,7 @@
 ---
 name: style-prompt-iteration
 description: Codex/ChatGPT 专用的纯美术风格获取、提取、萃取、蒸馏和迭代技能。用户说 get style、distill style、extract style、style extraction、style distillation、获取风格、提取风格、萃取画风、反推风格等任何中英文类似意图时触发完整 pipeline：先判定参考图媒介大类（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），再真实生成候选图、读图对比、自我修正，至少完成2轮4类验证图迭代，并生成16张独立材质/纹理锚点图（工具支持时并发），最终产出可复用的新风格 skill 文件夹。禁止只输出提示词或只生成 prompt 文件。
-version: 1.4.0
-author: Hermes Agent
-license: MIT
+version: 1.5.0
 metadata:
   hermes:
     tags: [
