@@ -172,6 +172,27 @@ sunset` 或 `白天 / 夜晚 / 日光 / 黄昏` 这类时间环境。
 正确方向：`Pure high-end 3D portrait render with softened but realistic facial planes,
 controlled SSS skin response, fine pore detail, and broad soft key light with preserved highlight color.`
 
+### `environment_base_style.md` 硬边界
+
+生成新 skill 的 `environment_base_style.md` / environment base prompt 时，只写可迁移的环境渲染语言：
+
+- rendering / technique：空间深度处理、边缘层级、表面细节频率、景深/雾化/后期质感、笔触或渲染管线。
+- material：墙面、地面、石材、木材、陶瓷、金属、植被等表面响应、粗糙度、微纹理和反射控制。
+- color systems：低饱和/高饱和、冷暖关系、明度层级、局部强调色比例、整体色彩组织；不要写精确颜色名。
+- lighting：光质、光源面积、漫反射、接触阴影、体积塑形、高光保色和阴影软硬。
+
+不得写室内/室外、建筑类型、房间类型、地理地点、时代场景、天气、日夜时间或具体场景内容。
+`indoor / outdoor / interior / exterior / room / hall / corridor /
+street / garden / temple / city / forest / day / night / daylight /
+nighttime / sunset` 以及 `室内 / 室外 / 内景 / 外景 / 房间 / 大厅 /
+走廊 / 街道 / 花园 / 寺庙 / 城市 / 森林 / 白天 / 夜晚 / 日光 / 黄昏`
+都属于内容或场景，不属于 environment base prompt。
+
+错误例：`Spaces should use quiet gray-taupe interiors, smooth plaster, stone, ceramic, or muted wood with subtle microtexture.`
+正确方向：`Low-chroma neutral color system with restrained warm-cool shifts,
+matte mineral and muted natural material response, subtle surface microtexture,
+soft broad illumination, controlled contact shadows, and preserved highlight color.`
+
 ### 单张参考图拆分
 
 写初版 prompt 前记录：
@@ -183,7 +204,7 @@ style_signal_split:
   conditional_style_variables:
     - 只适用于人脸、头发、皮革、金属等局部材质/主体的处理
   non_transferable_content:
-    - 具体人物、服装、场景、构图、道具、性别、年龄、身份等内容特征
+    - 具体人物、服装、场景、构图、道具、性别、年龄、身份、室内/室外、日夜时间等内容特征
   missing_risk_if_only_pipeline_words:
     - 只写 PBR / SSS / high-end render 会丢失的风格指纹
 ```
@@ -436,7 +457,7 @@ skill 被用于生成新图时不得被 `SKILL.md`、`router.md` 或默认使用
 
 - `face_base_style.md`：只写脸部的渲染、技法、材质和光照质量，例如面部平面处理、SSS/毛孔/发丝/眼部材质、边缘层级、细节频率、soft global illumination、受控高光；不得写性别、年龄、年龄阶段、身份、表情、吸引力评价、具体脸型内容，也不得写 day/night/daylight/nighttime 或中文日夜时间。
 - `full_body_base_style.md`：只写人体比例、形体体积、姿态受力、衣料服从身体、全身材质分区。
-- `environment_base_style.md`：只写空间、建筑/自然材质、背景色块、光影层级、环境细节频率；不得写皮肤/头发/五官。
+- `environment_base_style.md`：只写环境的渲染、技法、材质、色彩系统和光照质量，例如空间深度处理、边缘层级、表面材质响应、粗糙度、微纹理、低/高饱和色彩组织、冷暖关系、光质、光源面积、接触阴影；不得写室内/室外、建筑类型、房间类型、地理地点、天气、日夜时间或具体场景内容，也不得写精确颜色名。
 - `object_base_style.md`：只写物品轮廓、材质、边缘、反射折射、细节密度、放置环境统一性；不得写人体/皮肤/头发/五官。
 
 新 skill 的 [SKILL.md](SKILL.md) 必须很短：只作为入口，指示读取
@@ -543,6 +564,7 @@ router_summary:
   个主体 `*_base_style.md`、16 张材质 reference、各自
   `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
 - `face_base_style.md` / face base prompt 只含脸部渲染、技法、材质和光照质量；没有性别、年龄、年龄阶段、身份、表情、审美评价、day/night/daylight/nighttime 或中文日夜时间。
+- `environment_base_style.md` / environment base prompt 只含环境渲染、技法、材质、色彩系统和光照质量；没有 indoor/outdoor/interior/exterior、建筑/房间/地点类型、天气、day/night/daylight/nighttime、中文室内外/日夜时间或精确颜色名。
 - 已保存原始输入图到根目录 `original/`，并保存每轮迭代输出图到根目录
   `iterations/`；入口 SKILL 和 router 明确排除这些过程图，正常生成新图时不会读取或使用它们。
 - `references/` 下没有保存 `face.png`、`full_body.png`、`environment.png`、`object.png`；这些候选图只存在于 `iterations/`。
