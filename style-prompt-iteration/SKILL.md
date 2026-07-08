@@ -6,8 +6,39 @@ author: Hermes Agent
 license: MIT
 metadata:
   hermes:
-    tags: [image-style, prompt-iteration, art-direction, image-generation, style-matching, style-extraction, style-distillation, get-style, extract-style, distill-style]
-    aliases: [get-style, get-style-prompt, style-get, style-extract, style-distill, art-style-extraction, art-style-distillation, extract-style-prompt, distill-style-prompt, 获取风格, 获得风格, 获取画风, 获得画风, 提取风格, 提取美术风格, 萃取画风, 蒸馏风格, 反推风格, 获得风格提示词]
+    tags: [
+      image-style,
+      prompt-iteration,
+      art-direction,
+      image-generation,
+      style-matching,
+      style-extraction,
+      style-distillation,
+      get-style,
+      extract-style,
+      distill-style,
+    ]
+    aliases: [
+      get-style,
+      get-style-prompt,
+      style-get,
+      style-extract,
+      style-distill,
+      art-style-extraction,
+      art-style-distillation,
+      extract-style-prompt,
+      distill-style-prompt,
+      获取风格,
+      获得风格,
+      获取画风,
+      获得画风,
+      提取风格,
+      提取美术风格,
+      萃取画风,
+      蒸馏风格,
+      反推风格,
+      获得风格提示词,
+    ]
     related_skills: [image-art-direction]
 ---
 
@@ -17,10 +48,14 @@ metadata:
 
 当用户要求获取、提取、萃取、蒸馏、反推参考图风格，且上下文包含参考图/风格图时，本技能必须进入完整图片迭代模式。触发词包括但不限于：
 
-- English: `get style`, `get the style`, `get style prompt`, `get art style`, `extract style`, `distill style`, `style extraction`, `style distillation`, `derive style`, `reverse style`, `create style skill`, `make style skill`, `style from reference`.
+- English: `get style`, `get the style`, `get style prompt`, `get art style`,
+  `extract style`, `distill style`, `style extraction`, `style distillation`,
+  `derive style`, `reverse style`, `create style skill`, `make style skill`,
+  `style from reference`.
 - 中文：`获取风格`、`获得风格`、`获取画风`、`获得画风`、`提取风格`、`提取美术风格`、`萃取画风`、`蒸馏风格`、`反推风格`、`获得风格提示词`、`从参考图获得风格`、`生成风格技能`。
 
-`get style` 不是轻量触发词，不允许只生成 prompt 文件；它等同于要求执行完整 pipeline：
+`get style` 不是轻量触发词，不允许只生成 prompt 文件；它等同于要求执行完整
+pipeline：
 
 1. 读取 `./style-prompt-iteration/prompt_formula.md`。
 2. 查看参考图并判定大类媒介。
@@ -30,9 +65,15 @@ metadata:
 6. 生成并检查 16 张独立材质/纹理锚点图。
 7. 落盘一个新风格生成 skill 文件夹。
 
-禁止只输出提示词、只做文字分析、只生成 1 张图、只跑 1 轮、把“建议下一步生成”当作完成。若没有图片生成工具、工具失败、额度不足或参考图不可读，必须明确报告阻塞，并只把初版 prompt 标为临时草稿。
+禁止只输出提示词、只做文字分析、只生成 1 张图、只跑 1
+轮、把“建议下一步生成”当作完成。若没有图片生成工具、工具失败、额度不足或参考图不可读，必须明确报告阻塞，并只把初版
+prompt 标为临时草稿。
 
-路径写法硬约束：任何记录、日志、YAML、Markdown、最终回复和新 skill 文件中，只能写相对路径；禁止写全局/绝对路径，例如 `/Users/...`、`/private/...`、`C:\...`、`file://...`。已生成文件也必须用相对路径引用。外部图片工具返回的临时 `http(s)://...` URL 只可用于下载或检查；落盘记录、最终回复和新 skill 文件必须记录下载后的相对路径，不记录临时 URL。
+路径写法硬约束：任何记录、日志、YAML、Markdown、最终回复和新 skill
+文件中，只能写相对路径；禁止写全局/绝对路径，例如
+`/Users/...`、`/private/...`、`C:\...`、`file://...`。已生成文件也必须用相对路径引用。外部图片工具返回的临时
+`http(s)://...` URL 只可用于下载或检查；落盘记录、最终回复和新 skill
+文件必须记录下载后的相对路径，不记录临时 URL。
 
 例外：如果当前任务是在维护/编辑本技能文件本身，不要生成候选图。
 
@@ -48,15 +89,21 @@ metadata:
 [NEGATIVE]
 ```
 
-本技能主要修订 `[BASE_STYLE]`，但必须显式写 `[LIGHT_COLOR]` 的柔和光照约束和 `[NEGATIVE]` 的过曝/油亮失败项。不得把参考图具体人物、服装、道具、场景、景别、时间、剧情写进 `[BASE_STYLE]`。
+本技能主要修订 `[BASE_STYLE]`，但必须显式写 `[LIGHT_COLOR]` 的柔和光照约束和
+`[NEGATIVE]`
+的过曝/油亮失败项。不得把参考图具体人物、服装、道具、场景、景别、时间、剧情写进
+`[BASE_STYLE]`。
 
 ## 2. 大类媒介判定
 
 第一步必须从五类中选择一个主类，并写证据：
 
-- `pure_2d`：手绘/平面插画、线稿、笔触、色块、纸面/画布纹理主导；无稳定 3D 几何、PBR、摄影镜头证据。
-- `pure_3d_render`：CG/游戏/Octane/Unreal/Blender/ZBrush/KeyShot 等渲染感主导；有三维几何体积、PBR/SSS、毛发系统、景深、接触阴影、环境反射、材质响应。
-- `2_5d`：平面插画为主，但用强体积光影、软面塑形或伪 3D 质感增强；缺少真实 3D 管线证据。
+- `pure_2d`：手绘/平面插画、线稿、笔触、色块、纸面/画布纹理主导；无稳定 3D
+  几何、PBR、摄影镜头证据。
+- `pure_3d_render`：CG/游戏/Octane/Unreal/Blender/ZBrush/KeyShot
+  等渲染感主导；有三维几何体积、PBR/SSS、毛发系统、景深、接触阴影、环境反射、材质响应。
+- `2_5d`：平面插画为主，但用强体积光影、软面塑形或伪 3D 质感增强；缺少真实 3D
+  管线证据。
 - `2d_3d_hybrid`：明确同时存在 2D 手绘/线稿/笔触层和 3D 模型/环境/材质层。
 - `realistic_photography`：真实相机拍摄；真实传感器/镜头噪声、真实皮肤瑕疵、现实材质和自然不完美。
 
@@ -78,7 +125,9 @@ macro_medium:
     - painterly 2D illustration
 ```
 
-大类判错时后续全部失败。纯 3D 不得写成 2.5D / digital painting / anime illustration；纯 2D 不得写 PBR / SSS / ray-traced；混合风格必须分别描述 2D 层和 3D 层。
+大类判错时后续全部失败。纯 3D 不得写成 2.5D / digital painting / anime
+illustration；纯 2D 不得写 PBR / SSS / ray-traced；混合风格必须分别描述 2D 层和
+3D 层。
 
 ## 3. 风格提取边界
 
@@ -90,7 +139,8 @@ macro_medium:
 
 ### 必须排除内容污染
 
-不得把具体主体、身份、服装、道具、场景、动作、表情、景别、时间、天气、世界观、剧情写入 `[BASE_STYLE]`。这些只能进入 `[CONTENT]` 或 `[COMPOSITION]`。
+不得把具体主体、身份、服装、道具、场景、动作、表情、景别、时间、天气、世界观、剧情写入
+`[BASE_STYLE]`。这些只能进入 `[CONTENT]` 或 `[COMPOSITION]`。
 
 ### 单张参考图拆分
 
@@ -122,11 +172,18 @@ style_signal_split:
 
 默认追求：
 
-- `soft global illumination`, `broad area light`, `large diffused light source`, `controlled specular rolloff`, `preserved highlight color detail`。
-- 3D/摄影：area lights / softboxes / bounced light，而不是 point lights / hard flash / tiny hotspot。
+- `soft global illumination`, `broad area light`, `large diffused light source`,
+  `controlled specular rolloff`, `preserved highlight color detail`。
+- 3D/摄影：area lights / softboxes / bounced light，而不是 point lights / hard
+  flash / tiny hotspot。
 - 2D/2.5D/绘画：大面积色块、柔和笔触、低噪声明暗过渡、受控局部提亮，而不是碎亮点、油亮线、高频闪烁反光。
 
-`[LIGHT_COLOR]` 必须包含柔和全局光、大面积面光源、受控高光。`[NEGATIVE]` 必须包含：`overexposed highlights`, `blown-out whites`, `oily wet shine`, `greasy specular reflections`, `point-light hotspots`, `sparkle pollution`, `harsh flash lighting`, `uncontrolled glossy reflections`。这些是稳定失败防线，不受“少写 negative”的一般原则限制。
+`[LIGHT_COLOR]` 必须包含柔和全局光、大面积面光源、受控高光。`[NEGATIVE]`
+必须包含：`overexposed highlights`, `blown-out whites`, `oily wet shine`,
+`greasy specular reflections`, `point-light hotspots`, `sparkle pollution`,
+`harsh flash lighting`,
+`uncontrolled glossy reflections`。这些是稳定失败防线，不受“少写
+negative”的一般原则限制。
 
 候选图只要出现过曝/油亮/热点/闪点污染，即使其他风格维度接近，也必须失败并继续修订。
 
@@ -140,13 +197,16 @@ style_signal_split:
 - `manga-cover finish`
 - `crisp manga-cover`
 
-`[NEGATIVE]` 只写真正负面失败项。能正向表达的内容不要写 negative，例如用 `simple background` / `low-detail background` 替代 `not over-detailed background`。例外是第 4 节的过曝/油亮/热点稳定负面项。
+`[NEGATIVE]` 只写真正负面失败项。能正向表达的内容不要写 negative，例如用
+`simple background` / `low-detail background` 替代
+`not over-detailed background`。例外是第 4 节的过曝/油亮/热点稳定负面项。
 
 ## 6. 两轮四图迭代
 
 每轮必须生成 4 张独立候选图，使用同一版风格 prompt，测试风格跨内容迁移：
 
-1. `face_closeup`：人脸 / 头像 / 半身特写；检验脸部、五官、皮肤、头发、局部细节频率。
+1. `face_closeup`：人脸 / 头像 /
+   半身特写；检验脸部、五官、皮肤、头发、局部细节频率。
 2. `full_body`：人物全身；检验比例、形体体积、肢体生命力、姿态受力、衣料服从身体。
 3. `environment`：无人环境；检验空间、建筑/自然材质、背景色块、光影层级。
 4. `object_closeup_in_environment`：物品近景（有环境）；检验非人物材质、边缘、反射、环境统一性。
@@ -169,21 +229,26 @@ style_prompt: 当前 [BASE_STYLE]
 light_color: 当前 [LIGHT_COLOR]
 negative: 当前 [NEGATIVE]
 test_set:
-  face_closeup: {full_generation_prompt: ..., candidate_image: ...}
-  full_body: {full_generation_prompt: ..., candidate_image: ...}
-  environment: {full_generation_prompt: ..., candidate_image: ...}
-  object_closeup_in_environment: {full_generation_prompt: ..., candidate_image: ...}
+  face_closeup: { full_generation_prompt: ..., candidate_image: ... }
+  full_body: { full_generation_prompt: ..., candidate_image: ... }
+  environment: { full_generation_prompt: ..., candidate_image: ... }
+  object_closeup_in_environment: {
+    full_generation_prompt: ...,
+    candidate_image: ...,
+  }
 ```
 
 ## 7. 对比与修订
 
-每轮必须打开 4 张候选图逐张检查。忽略具体主体、服装、道具、场景、构图、日夜、动作、剧情；只评估纯美术风格。
+每轮必须打开 4
+张候选图逐张检查。忽略具体主体、服装、道具、场景、构图、日夜、动作、剧情；只评估纯美术风格。
 
 硬门槛：
 
 - `macro_medium_gate`：候选图主媒介必须与参考图一致。
 - `style_fingerprint_gate`：不能只是同媒介/同管线/同质量；必须匹配形状语言、比例理想化、边缘层级、明暗语法、材质细节频率、色彩配比、完成度边界。
-- `lighting_quality_gate`：不得过曝、油亮、点光源热点、硬闪光、星点污染、不受控 glossy 高光。
+- `lighting_quality_gate`：不得过曝、油亮、点光源热点、硬闪光、星点污染、不受控
+  glossy 高光。
 - `full_body_life_gate`：全身图必须有形体体积、肌肉/皮肤平面、重心、肢体张力、衣料受力；脸和配色接近不能抵消身体失败。
 
 报告格式：
@@ -191,13 +256,33 @@ test_set:
 ```yaml
 iteration: 1
 tests:
-  macro_medium_gate: {pass: false, reason: ...}
-  style_fingerprint_gate: {pass: false, reason: ...}
-  lighting_quality_gate: {pass: false, reason: ...}
-  face_closeup: {style_match_score: 0.72, pass: false, missing_or_weak: [], excess_or_wrong: []}
-  full_body: {style_match_score: 0.80, pass: false, missing_or_weak: [], excess_or_wrong: []}
-  environment: {style_match_score: 0.90, pass: true, missing_or_weak: [], excess_or_wrong: []}
-  object_closeup_in_environment: {style_match_score: 0.86, pass: false, missing_or_weak: [], excess_or_wrong: []}
+  macro_medium_gate: { pass: false, reason: ... }
+  style_fingerprint_gate: { pass: false, reason: ... }
+  lighting_quality_gate: { pass: false, reason: ... }
+  face_closeup: {
+    style_match_score: 0.72,
+    pass: false,
+    missing_or_weak: [],
+    excess_or_wrong: [],
+  }
+  full_body: {
+    style_match_score: 0.80,
+    pass: false,
+    missing_or_weak: [],
+    excess_or_wrong: [],
+  }
+  environment: {
+    style_match_score: 0.90,
+    pass: true,
+    missing_or_weak: [],
+    excess_or_wrong: [],
+  }
+  object_closeup_in_environment: {
+    style_match_score: 0.86,
+    pass: false,
+    missing_or_weak: [],
+    excess_or_wrong: [],
+  }
 overall_pass: false
 prompt_update:
   add_to_base: []
@@ -207,7 +292,9 @@ prompt_update:
 stop: false
 ```
 
-修订原则：一轮只解决最明显的 2-4 个偏差；优先精准风格词，少堆质量词；删除冲突词。媒介错先修媒介；媒介对但不像先补风格指纹；过曝/油亮/热点先修 `[LIGHT_COLOR]` 并保留光照 negative。
+修订原则：一轮只解决最明显的 2-4
+个偏差；优先精准风格词，少堆质量词；删除冲突词。媒介错先修媒介；媒介对但不像先补风格指纹；过曝/油亮/热点先修
+`[LIGHT_COLOR]` 并保留光照 negative。
 
 停止条件：
 
@@ -217,7 +304,12 @@ stop: false
 
 ## 8. 16 张材质/纹理锚点
 
-最终新 skill 必须包含 16 张默认材质/纹理 reference，每个材质是一个独立图片生成任务。工具支持并发时应并发提交 16 个独立请求；如果不支持并发则顺序生成。禁止 4x4 宫格、contact sheet、atlas、sprite sheet、大图合集、先生成大图再 crop。每张图必须有独立 prompt、独立相对输出路径、独立检查记录；如果工具只返回临时 URL，必须下载到相对路径后再记录。
+最终新 skill 必须包含 16 张默认材质/纹理
+reference，每个材质是一个独立图片生成任务。工具支持并发时应并发提交 16
+个独立请求；如果不支持并发则顺序生成。禁止 4x4 宫格、contact
+sheet、atlas、sprite sheet、大图合集、先生成大图再 crop。每张图必须有独立
+prompt、独立相对输出路径、独立检查记录；如果工具只返回临时
+URL，必须下载到相对路径后再记录。
 
 默认材质：
 
@@ -226,11 +318,21 @@ skin, hair, fabric, leather, metal, glass, plastic, wood,
 stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
 ```
 
-材质图应是中性材质样本、材质球或简单材质块，不得做成复杂道具、角色或场景。每个 `materials/*_base_style.md` 只写该材质的反射/粗糙度、纹理频率、边缘高光、磨损/裂纹/纤维/气泡等微细节、与整体色彩系统的关系。
+材质图应是中性材质样本、材质球或简单材质块，不得做成复杂道具、角色或场景。每个
+`materials/*_base_style.md`
+只写该材质的反射/粗糙度、纹理频率、边缘高光、磨损/裂纹/纤维/气泡等微细节、与整体色彩系统的关系。
 
 ## 9. 最终新 skill 产物
 
-默认必须在当前 agent 运行的 working directory（`pwd`）下创建一个新 skill 文件夹，名称用 hyphen-case，例如如果当前 `pwd` 是 `X`，最终产物应放在 `X/<style-name>-style/`。不要只在对话中贴 prompt。不要创建 `examples/`、`specs/`、README、CHANGELOG、INSTALLATION_GUIDE。
+默认必须在当前 agent 运行的 working directory（`pwd`）下创建一个全新的 skill
+文件夹，禁止覆盖或复用已存在文件夹。若目标名已存在，必须改用另一个不会冲突的新名称，例如追加
+`-2` /
+`-3`，或按用户输入语言改写成同义新名；创建前必须检查路径不存在。文件夹名和 skill
+name 必须与用户输入语言一致：用户用英文提出风格需求时使用英文 hyphen-case，例如
+`watercolor-ink-style`；用户用中文提出风格需求时使用简洁中文名，例如
+`水墨淡彩风格`。例如如果当前 `pwd` 是 `X`，最终产物应放在
+`X/<style-name>-style/` 或同语言等价名称下。不要只在对话中贴 prompt。不要创建
+`examples/`、`specs/`、README、CHANGELOG、INSTALLATION_GUIDE。
 
 目录结构：
 
@@ -240,22 +342,16 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
   references/
     shared_style_invariants.md
     router.md
+    face.png
     face_base_style.md
+    full_body.png
     full_body_base_style.md
+    environment.png
     environment_base_style.md
+    object.png
     object_base_style.md
     negative_prompt.md
     generation_formula.md
-    original/
-        # put original input images here
-    iterations/
-        # put iteration output images here
-        iteration1/
-            face.png
-            full_body.png
-            environment.png
-            object.png
-        iteration2/ # if any 
     materials/
       skin.png
       skin_base_style.md
@@ -289,16 +385,36 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
       makeup_base_style.md
       foliage.png
       foliage_base_style.md
+    original/
+        # archival only: original input images, never loaded by router during normal use
+    iterations/
+        # archival only: all output images generated during iterations, never loaded by router during normal use
+        iteration1/
+            face.png
+            full_body.png
+            environment.png
+            object.png
+        iteration2/ # if any
 ```
 
-4 张主体 reference 必须来自真实迭代产出：
+4 张主体 reference 必须来自真实迭代产出，并复制到
+`references/face.png`、`references/full_body.png`、`references/environment.png`、`references/object.png`
+作为可路由的精选 reference。`references/original/` 和 `references/iterations/`
+只保存过程归档：它们必须随 skill 文件夹交付，但在该 skill 被用于生成新图时不得被
+`SKILL.md`、`router.md` 或默认使用流程读取、引用或纳入风格判断。
 
 - `face_base_style.md`：只写脸、皮肤、五官、发丝、面部边缘、脸部细节频率。
 - `full_body_base_style.md`：只写人体比例、形体体积、姿态受力、衣料服从身体、全身材质分区。
 - `environment_base_style.md`：只写空间、建筑/自然材质、背景色块、光影层级、环境细节频率；不得写皮肤/头发/五官。
 - `object_base_style.md`：只写物品轮廓、材质、边缘、反射折射、细节密度、放置环境统一性；不得写人体/皮肤/头发/五官。
 
-新 skill 的 [SKILL.md](SKILL.md) 必须很短：只作为入口，指示读取 `references/router.md`，按主体 route 和材质 route 选择相关 reference 与 `*_base_style.md`，再组合 `shared_style_invariants.md`、`negative_prompt.md`、`generation_formula.md` 和用户需求。复杂风格内容必须放在 `references/`，不要塞回入口 `SKILL.md`。
+新 skill 的 [SKILL.md](SKILL.md) 必须很短：只作为入口，指示读取
+`references/router.md`，按主体 route 和材质 route 选择相关精选 reference 与
+`*_base_style.md`，再组合
+`shared_style_invariants.md`、`negative_prompt.md`、`generation_formula.md`
+和用户需求。复杂风格内容必须放在 `references/`，不要塞回入口 `SKILL.md`。入口和
+router 必须明确排除 `references/original/` 与
+`references/iterations/`，这些过程图只用于审计和复盘，不能参与新图生成。
 
 `router.md` 必须支持：
 
@@ -328,7 +444,9 @@ material_routes:
   foliage: 叶片、草、苔藓、植物纤维、自然植被纹理
 ```
 
-路由规则：无人环境不读人物文件；物品不读人物文件；人脸不读环境/物品文件，除非用户明确要求复杂场景或道具。材质按画面实际材质叠加，例如香水瓶读 `object + glass + metal`，石头神庙读 `environment + stone`，妆容头像读 `face + skin + makeup`。
+路由规则：无人环境不读人物文件；物品不读人物文件；人脸不读环境/物品文件，除非用户明确要求复杂场景或道具。材质按画面实际材质叠加，例如香水瓶读
+`object + glass + metal`，石头神庙读 `environment + stone`，妆容头像读
+`face + skin + makeup`。
 
 ## 10. 最终回复
 
@@ -347,10 +465,28 @@ fit_notes:
   remaining_minor_differences: []
 router_summary:
   subject_routes: [face, full_body, environment, object, mixed]
-  material_routes: [skin, hair, fabric, leather, metal, glass, plastic, wood, stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage]
+  material_routes: [
+    skin,
+    hair,
+    fabric,
+    leather,
+    metal,
+    glass,
+    plastic,
+    wood,
+    stone,
+    ceramic,
+    paper,
+    liquid,
+    emissive,
+    rubber,
+    makeup,
+    foliage,
+  ]
 ```
 
-不要输出冗长实验日志，除非用户要求。若保留过程文件，只能写 `references/iteration_notes.md`。
+不要输出冗长实验日志，除非用户要求。若保留过程文件，只能写
+`references/iteration_notes.md`。
 
 ## 11. 交付前最小检查
 
@@ -358,10 +494,22 @@ router_summary:
 - 已判定大类媒介，且没有默认写成 2.5D。
 - 已记录 `style_signal_split`。
 - `[BASE_STYLE]` 包含风格指纹，不只是管线词；没有内容污染。
-- `[LIGHT_COLOR]` 使用柔和全局光 / 大面积面光源 / 受控高光；绘画媒介转译为大色块和柔和笔触。
+- `[LIGHT_COLOR]` 使用柔和全局光 / 大面积面光源 /
+  受控高光；绘画媒介转译为大色块和柔和笔触。
 - `[NEGATIVE]` 含过曝、油亮、点光源热点、闪点污染稳定负面项。
 - 至少完成 2 轮，每轮真实生成并检查 4 张候选图。
-- 任一候选图未通过媒介、风格指纹或光照质量门槛时已继续迭代；全身候选图未通过 `full_body_life_gate` 时已继续迭代。
-- 已生成 16 张独立材质/纹理锚点；工具支持时已并发；没有宫格、合集、atlas、contact sheet 或裁切图。
-- 已创建新 skill 文件夹，含 [SKILL.md](SKILL.md)、`references/router.md`、`shared_style_invariants.md`、4 张主体 reference、16 张材质 reference、各自 `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
+- 任一候选图未通过媒介、风格指纹或光照质量门槛时已继续迭代；全身候选图未通过
+  `full_body_life_gate` 时已继续迭代。
+- 已生成 16
+  张独立材质/纹理锚点；工具支持时已并发；没有宫格、合集、atlas、contact sheet
+  或裁切图。
+- 已创建全新的、未覆盖既有目录的 skill 文件夹；文件夹名和 skill name
+  与用户输入语言一致。
+- 已创建新 skill 文件夹，含
+  [SKILL.md](SKILL.md)、`references/router.md`、`shared_style_invariants.md`、4
+  张精选主体 reference、16 张材质 reference、各自
+  `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
+- 已保存原始输入图到 `references/original/`，并保存每轮迭代输出图到
+  `references/iterations/`；入口 SKILL 和 router
+  明确排除这些过程图，正常生成新图时不会读取或使用它们。
 - 所有记录、产物文件和最终回复中的路径均为相对路径，没有全局/绝对路径。
