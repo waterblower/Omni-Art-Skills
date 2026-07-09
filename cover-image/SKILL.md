@@ -17,12 +17,15 @@ If the image model produces inaccurate Chinese text, use deterministic local pos
 
 ## Delivery Rules
 
-- Do not write generated images into this skill directory or any subdirectory of it.
-- Do not choose an output folder on the user's behalf.
+- Never write generated images into this skill directory, including `cover-image/`, or any subdirectory of it.
+- Never use a path relative to this skill directory, such as `cover-image/cover-image.png`, for generated outputs.
+- Never choose an output folder or filename on the user's behalf.
 - Keep generated images in the Codex conversation by default.
-- Only save image files when the user explicitly provides a destination folder or asks for downloadable files.
-- If saving is requested, write only to the user-specified destination and report the saved paths.
-- If no save destination is provided, do not report a file path.
+- Only save image files when the user explicitly provides a concrete destination path outside this skill directory.
+- A request to "generate", "make", "show", "deliver", or create "downloadable" cover images is not permission to save files.
+- If the user asks to save but does not provide a concrete destination path, ask for the path before saving.
+- If saving is requested with an explicit destination, write only to that destination and report the saved paths.
+- If no explicit save destination is provided, do not create files and do not report a file path.
 
 ## Default Cover Requirements
 
@@ -38,7 +41,7 @@ Use these defaults unless the user says otherwise:
   - 16:9: `1920x1080`
   - 4:3: `1600x1200`
   - 3:4: `1200x1600`
-- Output format: PNG unless the user asks for another format and explicitly requests saved files.
+- Output format: PNG only when the user explicitly requests saved files with a concrete destination path; otherwise deliver images directly in the conversation without creating files.
 
 ## Visual Direction
 
@@ -98,5 +101,6 @@ Before finishing:
 3. Confirm lighting remains soft and not significantly darker than the reference.
 4. Confirm text does not cover the face.
 5. Confirm that the default output set is three images: 16:9, 4:3, and 3:4, unless the user explicitly requested one image.
-6. If files were saved because the user requested it, confirm dimensions with an image tool such as `sips -g pixelWidth -g pixelHeight` and report the saved paths and dimensions.
-7. If files were not saved, present the generated images directly in the conversation and identify their aspect ratios.
+6. Confirm that no files were created unless the user provided a concrete save destination outside this skill directory.
+7. If files were saved because the user provided an explicit destination path, confirm dimensions with an image tool such as `sips -g pixelWidth -g pixelHeight` and report the saved paths and dimensions.
+8. If files were not saved, present the generated images directly in the conversation and identify their aspect ratios.

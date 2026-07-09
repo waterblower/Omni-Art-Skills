@@ -1,4 +1,4 @@
 interface:
   display_name: "Cover Image"
   short_description: "Create soft-light Chinese cover images"
-  default_prompt: "Use $cover-image to create three Chinese video covers from a reference image in 16:9, 4:3, and 3:4, delivered in the Codex conversation unless the user specifies a save location."
+  default_prompt: "Use $cover-image to create three Chinese video covers from a reference image in 16:9, 4:3, and 3:4. Deliver them in the Codex conversation by default. Do not save files unless the user provides a concrete destination path outside the cover-image skill directory."
