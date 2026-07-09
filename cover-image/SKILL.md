@@ -1,19 +1,28 @@
 ---
 name: cover-image
-description: Create Chinese video cover images and thumbnails from a reference image, especially for AI/tech tutorial covers requiring exact Chinese title text, soft-light 3D-rendered portrait aesthetics, and multiple aspect ratios such as 16:9, 4:3, and 3:4. Use when the user asks to make, redo, or adjust cover images/thumbnails with a supplied reference image, Chinese text, and exportable PNG/JPG deliverables.
+description: Create Chinese video cover images and thumbnails from a reference image, especially for AI/tech tutorial covers requiring exact Chinese title text, soft-light 3D-rendered portrait aesthetics, and the standard aspect ratios 16:9, 4:3, and 3:4. Use when the user asks to make, redo, or adjust cover images/thumbnails with a supplied reference image and Chinese text.
 ---
 
 # Cover Image
 
 ## Core Intent
 
-Create polished Chinese video cover images from a supplied reference image while preserving the reference's soft-light, high-precision 3D-rendered portrait feel. Prioritize accurate text, usable thumbnail composition, and final files saved in the active task's `outputs` directory.
+Create polished Chinese video cover images from a supplied reference image while preserving the reference's soft-light, high-precision 3D-rendered portrait feel. Prioritize accurate text, usable thumbnail composition, and direct delivery in the Codex conversation.
 
 ## Required Skill Chaining
 
 When generating or editing raster cover imagery, use `$imagegen` first and follow its built-in tool workflow. Treat the user-provided image as the primary reference or edit target.
 
 If the image model produces inaccurate Chinese text, use deterministic local post-processing to cover and redraw the exact requested text with an installed Chinese-capable font. Do not accept misspelled, duplicated, or substituted title text as final.
+
+## Delivery Rules
+
+- Do not write generated images into this skill directory or any subdirectory of it.
+- Do not choose an output folder on the user's behalf.
+- Keep generated images in the Codex conversation by default.
+- Only save image files when the user explicitly provides a destination folder or asks for downloadable files.
+- If saving is requested, write only to the user-specified destination and report the saved paths.
+- If no save destination is provided, do not report a file path.
 
 ## Default Cover Requirements
 
@@ -23,13 +32,13 @@ Use these defaults unless the user says otherwise:
 - For the recurring AI tutorial cover pattern, use:
   - `Image2超精度3D渲染`
   - `Codex智能体`
-- Aspect ratios: create one 16:9 cover, one 4:3 cover, and one 3:4 cover.
+- Aspect ratios: create exactly three covers by default: one 16:9 cover, one 4:3 cover, and one 3:4 cover.
+- Exception: create only one cover when the user explicitly asks for a single image or specifies exactly one aspect ratio.
 - Suggested output sizes:
   - 16:9: `1920x1080`
   - 4:3: `1600x1200`
   - 3:4: `1200x1600`
-- Output format: PNG unless the user asks for another format.
-- Save final deliverables under the current workspace `outputs/` folder with clear filenames such as `cover_16x9.png`, `cover_4x3.png`, and `cover_3x4.png`.
+- Output format: PNG unless the user asks for another format and explicitly requests saved files.
 
 ## Visual Direction
 
@@ -88,5 +97,6 @@ Before finishing:
 2. Confirm the text is exact and contains no extra text.
 3. Confirm lighting remains soft and not significantly darker than the reference.
 4. Confirm text does not cover the face.
-5. Confirm dimensions with an image tool such as `sips -g pixelWidth -g pixelHeight`.
-6. Report final saved paths and dimensions.
+5. Confirm that the default output set is three images: 16:9, 4:3, and 3:4, unless the user explicitly requested one image.
+6. If files were saved because the user requested it, confirm dimensions with an image tool such as `sips -g pixelWidth -g pixelHeight` and report the saved paths and dimensions.
+7. If files were not saved, present the generated images directly in the conversation and identify their aspect ratios.
