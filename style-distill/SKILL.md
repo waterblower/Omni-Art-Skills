@@ -1,6 +1,5 @@
 ---
 name: style-distill
-version: 1.5
 description: >-
   纯美术风格获取、提取、萃取、蒸馏和迭代技能。Use when the user asks get style,
   distill style, extract style, style extraction, style distillation,
@@ -10,44 +9,6 @@ description: >-
   revise, complete at least 2 rounds of 4 validation images, generate 16
   independent material/texture anchors when tools allow, and output a reusable
   new style skill folder. Do not only output prompts or a prompt file.
-metadata:
-  compatible_with:
-    - codex
-    - hermes
-  tags:
-    - image-style
-    - prompt-iteration
-    - art-direction
-    - image-generation
-    - style-matching
-    - style-extraction
-    - style-distillation
-    - get-style
-    - extract-style
-    - distill-style
-  aliases:
-    - get-style
-    - get-style-prompt
-    - style-get
-    - style-extract
-    - style-distill
-    - style-distillation
-    - art-style-extraction
-    - art-style-distillation
-    - extract-style-prompt
-    - distill-style-prompt
-    - 获取风格
-    - 获得风格
-    - 获取画风
-    - 获得画风
-    - 提取风格
-    - 提取美术风格
-    - 萃取画风
-    - 蒸馏风格
-    - 反推风格
-    - 获得风格提示词
-  related_skills:
-    - image-art-direction
 ---
 
 # Style Distill / 纯美术风格蒸馏
@@ -389,7 +350,7 @@ name 必须与用户输入语言一致：用户用英文提出风格需求时使
 `X/<style-name>-style/` 或同语言等价名称下。不要只在对话中贴 prompt。不要创建
 `examples/`、`specs/`、README、CHANGELOG、INSTALLATION_GUIDE。
 
-创建方式硬约束：不要手工从零搭目录。必须把本技能自带的 `template/` 文件夹整体复制到目标路径，并把复制后的文件夹重命名为合理的风格名。`template/` 是唯一结构参考；复制后将空 `.md` 文件替换为真实内容，将空 `.png` 占位文件替换为真实图片。`original/` 与 `iterations/` 必须按真实数量整理：原始输入图有几张就保留/追加几张，不要固定写死 3 张；实际生成了几轮就保留/追加几个 `iterations/iterationN/` 目录，不要固定写死第 2 轮或第 3 轮。删除没有真实图片对应的占位 `.png` 和空迭代目录。除这些“按真实输入/迭代产物增删归档占位”的情况外，不要改变模板目录结构。
+创建方式硬约束：直接按下方“目录结构”创建全新 skill，所有 Markdown 必须包含可执行的真实内容，所有 PNG 必须是可解码的真实图片，不得创建空文件或占位文件。`original/` 与 `iterations/` 必须按真实数量整理：原始输入图有几张就保留几张；实际生成了几轮就创建几个 `iterations/iterationN/` 目录，不得保留没有真实产物的空目录。
 
 ### 目录结构：
 ```
@@ -562,7 +523,7 @@ router_summary:
   或裁切图。
 - 已创建全新的、未覆盖既有目录的 skill 文件夹；文件夹名和 skill name
   与用户输入语言一致。
-- 已将本技能自带的 `template/` 整体复制到目标路径并重命名；所有空 `.md` 已替换为真实内容，所有空 `.png` 占位文件已替换为真实图片。
+- 已按规定目录结构创建最终 skill；所有 Markdown 均包含可执行的真实内容，所有 PNG 均是可解码的真实图片，没有空文件或占位文件。
 - 已按真实数量整理 `original/` 和 `iterations/`：没有固定保留多余输入图占位，也没有固定保留不存在的第 2 / 第 3 轮迭代目录。
 - 已创建新 skill 文件夹，含
   [SKILL.md](SKILL.md)、`references/router.md`、`shared_style_invariants.md`、4
