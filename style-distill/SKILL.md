@@ -1,19 +1,18 @@
 ---
 name: style-distill
 description: >-
-  纯美术风格获取、提取、萃取、蒸馏和迭代技能。Use when the user asks get style,
-  distill style, extract style, style extraction, style distillation,
-  get-style-prompt, 获取风格, 提取风格, 萃取画风, 蒸馏风格, 反推风格, or similar
-  Chinese/English intents from reference images. Run the full pipeline:
-  classify the reference medium, generate real candidate images, compare and
-  revise, complete at least 2 rounds of 4 validation images, generate 16
-  independent material/texture anchors when tools allow, and output a reusable
-  new style skill folder. Do not only output prompts or a prompt file.
+  纯美术风格获取、提取、萃取、蒸馏、候选图生产与最终风格技能打包流水线。Use when the user asks get style, distill
+  style, extract style, style extraction, style distillation, get-style-prompt,
+  获取风格、提取风格、萃取画风、蒸馏风格、反推风格、生成风格技能 or similar intents from reference images.
+  This skill owns style specification, prompt revision, candidate generation,
+  iteration control and packaging. It must send every candidate through
+  image-quality-check and then send quality-approved candidates through
+  validate-style-match; it must not perform either validation itself.
 ---
 
 # Style Distill / 纯美术风格蒸馏
 
-## 0. 不可跳过的执行规则
+## 0. 生产职责与不可跳过流程
 
 当用户要求获取、提取、萃取、蒸馏、反推参考图风格，且上下文包含参考图/风格图时，本技能必须进入完整图片迭代模式。触发词包括但不限于：
 
@@ -23,20 +22,19 @@ description: >-
   `style from reference`.
 - 中文：`获取风格`、`获得风格`、`获取画风`、`获得画风`、`提取风格`、`提取美术风格`、`萃取画风`、`蒸馏风格`、`反推风格`、`获得风格提示词`、`从参考图获得风格`、`生成风格技能`。
 
-`get style` 不是轻量触发词，不允许只生成 prompt 文件；它等同于要求执行完整
-pipeline：
+`get style` 等请求进入完整生产流水线：
 
 1. 读取 `./style-distill/prompt_formula.md`。
 2. 查看参考图并判定大类媒介。
-3. 写初版 `[BASE_STYLE]`、`[LIGHT_COLOR]`、`[NEGATIVE]`。
-4. 调用图片生成工具，至少完成 2 轮：每轮 4 张候选图。
-5. 打开候选图逐张对比，修订 prompt，再生成下一轮。
-6. 生成并检查 16 张独立材质/纹理锚点图。
-7. 落盘一个新风格生成 skill 文件夹。
+3. 写初版 `style_spec`、`[BASE_STYLE]`、`[LIGHT_COLOR]`、`[NEGATIVE]`。
+4. 按参考覆盖范围和目标用途生成本轮候选图。
+5. 每张候选图立即交给 `image-quality-check`；未通过的图不得进入风格验证。
+6. 将全部通用质检通过的候选图、参考图和 `style_spec` 交给 `validate-style-match`。
+7. 只根据 `quality_result.repair_directives` 或 `style_validation.repair_directives` 修订生产 prompt，然后进入下一轮。
+8. 生成并检查最终材质/纹理锚点图。
+9. 只在最终轮通过独立风格验证后，落盘新风格 skill 文件夹。
 
-禁止只输出提示词、只做文字分析、只生成 1 张图、只跑 1
-轮、把“建议下一步生成”当作完成。若没有图片生成工具、工具失败、额度不足或参考图不可读，必须明确报告阻塞，并只把初版
-prompt 标为临时草稿。
+本技能不得自己给候选图作通用质量结论或风格匹配结论，不得覆盖两个验证技能的状态。若没有图片生成工具、工具失败、额度不足或参考图不可读，明确报告阻塞，并只把初版 prompt 标为临时草稿。
 
 路径写法硬约束：任何记录、日志、YAML、Markdown、最终回复和新 skill
 文件中，只能写相对路径；禁止写全局/绝对路径，例如
@@ -58,10 +56,38 @@ prompt 标为临时草稿。
 [NEGATIVE]
 ```
 
-本技能主要修订 `[BASE_STYLE]`，但必须显式写 `[LIGHT_COLOR]` 的柔和光照约束和
-`[NEGATIVE]`
-的过曝/油亮失败项。不得把参考图具体人物、服装、道具、场景、景别、时间、剧情写进
-`[BASE_STYLE]`。
+本技能主要修订 `[BASE_STYLE]`、`[LIGHT_COLOR]` 和 `[NEGATIVE]`。光线与失败项必须来自参考图的可观察特征或已发生的生成伪影，不得默认改成柔光、低对比或其他偏好。不得把参考图具体人物、服装、道具、场景、景别、时间、剧情写进 `[BASE_STYLE]`。
+
+### Style specification 生产契约
+
+在生成第一轮候选图前，写出与 `validate-style-match` 兼容的 `style_spec`：
+
+```yaml
+style_spec:
+  schema_version: 1
+  reference_images: []
+  target_model: ""
+  target_domains: []
+  observed:
+    medium_appearance: ""
+    shape_language: ""
+    edge_hierarchy: ""
+    palette: ""
+    tonal_structure: ""
+    lighting: ""
+    surface_response: ""
+    detail_frequency: ""
+    postprocess: ""
+    finish_boundary: ""
+  conditional_rules: []
+  unsupported_domains: []
+  prompt_fragments:
+    base_style: ""
+    light_color: ""
+    negative: ""
+```
+
+每个维度区分参考图中直接观察到的内容、合理推断和无证据外推。参考图不支持的主体领域写入 `unsupported_domains`，不伪造已验证的风格结论。
 
 ## 2. 大类媒介判定
 
@@ -172,32 +198,13 @@ style_signal_split:
 
 把 `[BASE_STYLE]` 中媒介/管线词删掉后，剩余词仍必须能描述可识别画风。
 
-## 4. 全局光照质量门槛
+## 4. 参考相对的光线与伪影控制
 
-无论媒介是 2D、2.5D、3D、混合还是真实摄影，都必须避开以下失败光照：
-
-- 过曝皮肤、过曝白衣、亮斑冲白、亮部无色彩层次。
-- 不自然镜面反射、湿油感、塑料感、油膜感、廉价 glossy 高光。
-- 点光源热点、硬闪光、小光斑、星点泛滥、粒子/高光污染。
-- 过强 rim light、过硬 specular streak、不受控白线高光。
-- 雨水、汗水、湿身、玻璃、金属、皮革等材质被渲染成油腻脏亮。
-
-默认追求：
-
-- `soft global illumination`, `broad area light`, `large diffused light source`,
-  `controlled specular rolloff`, `preserved highlight color detail`。
-- 3D/摄影：area lights / softboxes / bounced light，而不是 point lights / hard
-  flash / tiny hotspot。
-- 2D/2.5D/绘画：大面积色块、柔和笔触、低噪声明暗过渡、受控局部提亮，而不是碎亮点、油亮线、高频闪烁反光。
-
-`[LIGHT_COLOR]` 必须包含柔和全局光、大面积面光源、受控高光。`[NEGATIVE]`
-必须包含：`overexposed highlights`, `blown-out whites`, `oily wet shine`,
-`greasy specular reflections`, `point-light hotspots`, `sparkle pollution`,
-`harsh flash lighting`,
-`uncontrolled glossy reflections`。这些是稳定失败防线，不受“少写
-negative”的一般原则限制。
-
-候选图只要出现过曝/油亮/热点/闪点污染，即使其他风格维度接近，也必须失败并继续修订。
+- 先提取参考图中的光质、方向、对比、高光形状、阴影语法和反射方式，再写 `[LIGHT_COLOR]`。
+- 硬闪光、点光源、强 rim light、镜面反射、风格化过曝或塑料高光若是参考图的有意特征，必须保留，不得自动写入 `[NEGATIVE]`。
+- 只将参考图没有、且在生成中造成内容不可读或材质污染的额外伪影写入 `[NEGATIVE]`。
+- 通用图片缺陷由 `image-quality-check` 判定；光线是否忠实匹配参考由 `validate-style-match` 判定。
+- 本技能只负责根据两者的 `repair_directives` 修改生产 prompt。
 
 ## 5. 禁用词和 negative 原则
 
@@ -209,114 +216,67 @@ negative”的一般原则限制。
 - `manga-cover finish`
 - `crisp manga-cover`
 
-`[NEGATIVE]` 只写真正负面失败项。能正向表达的内容不要写 negative，例如用
-`simple background` / `low-detail background` 替代
-`not over-detailed background`。例外是第 4 节的过曝/油亮/热点稳定负面项。
+`[NEGATIVE]` 只写已有参考证据或已发生的生成失败项。能正向表达的内容不要写 negative，例如用 `simple background` / `low-detail background` 替代 `not over-detailed background`。
 
 所有风格 reference 文件都必须先写 positive constraints，再写 negative constraints。
 凡是能用正向约束表达的内容，不要再写成负向约束：用 `low detail`，不要写
 `not high detail`；用 `high detail`，不要写 `not low detail`。负向约束只保留真正的失败模式、污染项或工具常见错误。
 
-## 6. 两轮四图迭代
+## 6. 候选图生产
 
-每轮必须生成 4 张独立候选图，使用同一版风格 prompt，测试风格跨内容迁移：
+默认测试下列四个 domain，但只有它们出现在 `target_domains` 中，且参考集有直接证据时，才是硬性验证项：
 
-1. `face_closeup`：人脸 / 头像 /
-   半身特写；检验脸部、五官、皮肤、头发、局部细节频率。
-2. `full_body`：人物全身；检验比例、形体体积、肢体生命力、姿态受力、衣料服从身体。
-3. `environment`：无人环境；检验空间、建筑/自然材质、背景色块、光影层级。
-4. `object_closeup_in_environment`：物品近景（有环境）；检验非人物材质、边缘、反射、环境统一性。
+1. `face_closeup`：人脸、头像或半身特写。
+2. `full_body`：人物全身、比例、姿态和衣料。
+3. `environment`：无人空间、建筑或自然环境。
+4. `object_closeup_in_environment`：物品近景与周边环境。
 
-测试内容是载体，不进入 `[BASE_STYLE]`。可用中性内容：
+参考图未覆盖的 domain 可用于外推测试，但必须在 `style_spec.unsupported_domains` 或生成记录中标为 `SYNTHESIZED`，不得当作忠实匹配证据。
 
-```text
-face close-up of a neutral original character, plain background
-full-body neutral original character with visible arms and legs, weight-bearing dynamic pose, simple background
-simple empty environment, no people, readable space
-close-up of a simple everyday object placed in a readable environment, no people
-```
-
-生成记录格式：
+同一轮使用同一版风格 prompt 和稳定测试内容。工具支持时固定 seed 和生成参数，并记录模型/版本，避免把随机波动误当作 prompt 改进。
 
 ```yaml
 iteration: 1
-macro_medium: ...
-style_prompt: 当前 [BASE_STYLE]
-light_color: 当前 [LIGHT_COLOR]
-negative: 当前 [NEGATIVE]
-test_set:
-  face_closeup: { full_generation_prompt: ..., candidate_image: ... }
-  full_body: { full_generation_prompt: ..., candidate_image: ... }
-  environment: { full_generation_prompt: ..., candidate_image: ... }
-  object_closeup_in_environment: {
-    full_generation_prompt: ...,
-    candidate_image: ...,
-  }
+style_spec_version: 1
+generator: ""
+model_version: ""
+seed: null
+prompt_fragments:
+  base_style: ""
+  light_color: ""
+  negative: ""
+candidates:
+  - candidate_id: "iteration1-face"
+    domain: face_closeup
+    evidence_type: OBSERVED | INFERRED | SYNTHESIZED
+    full_generation_prompt: ""
+    candidate_image: ""
 ```
 
-## 7. 对比与修订
+## 7. 三技能协作与迭代
 
-每轮必须打开 4
-张候选图逐张检查。忽略具体主体、服装、道具、场景、构图、日夜、动作、剧情；只评估纯美术风格。
+每轮严格按以下顺序：
 
-硬门槛：
+1. **生产候选图**
+   - `style-distill` 保留候选图、完整 prompt、参考图用途、轮次和生成器参数。
 
-- `macro_medium_gate`：候选图主媒介必须与参考图一致。
-- `style_fingerprint_gate`：不能只是同媒介/同管线/同质量；必须匹配形状语言、比例理想化、边缘层级、明暗语法、材质细节频率、色彩配比、完成度边界。
-- `lighting_quality_gate`：不得过曝、油亮、点光源热点、硬闪光、星点污染、不受控
-  glossy 高光。
-- `full_body_life_gate`：全身图必须有形体体积、肌肉/皮肤平面、重心、肢体张力、衣料受力；脸和配色接近不能抵消身体失败。
+2. **通用质量闸门**
+   - 对每张候选图使用 `image-quality-check`。
+   - `PASS / PASS_WITH_NOTES` 且 `eligible_for_style_validation = true`：进入风格验证集。
+   - `REGENERATE_MINOR / REGENERATE_MAJOR`：只根据 `quality_result.repair_directives` 重生当前候选；不先改风格规格。
+   - `BLOCKED`：停止当前候选链并报告。
 
-报告格式：
+3. **独立风格验证**
+   - 只将全部通用质量合格的候选图、参考图和 `style_spec` 交给 `validate-style-match`。
+   - `style-distill` 不重复执行风格判定，也不把预期结论写进验证输入。
 
-```yaml
-iteration: 1
-tests:
-  macro_medium_gate: { pass: false, reason: ... }
-  style_fingerprint_gate: { pass: false, reason: ... }
-  lighting_quality_gate: { pass: false, reason: ... }
-  face_closeup: {
-    style_match_score: 0.72,
-    pass: false,
-    missing_or_weak: [],
-    excess_or_wrong: [],
-  }
-  full_body: {
-    style_match_score: 0.80,
-    pass: false,
-    missing_or_weak: [],
-    excess_or_wrong: [],
-  }
-  environment: {
-    style_match_score: 0.90,
-    pass: true,
-    missing_or_weak: [],
-    excess_or_wrong: [],
-  }
-  object_closeup_in_environment: {
-    style_match_score: 0.86,
-    pass: false,
-    missing_or_weak: [],
-    excess_or_wrong: [],
-  }
-overall_pass: false
-prompt_update:
-  add_to_base: []
-  remove_from_base: []
-  update_light_color: []
-  add_to_neg: []
-stop: false
-```
+4. **消费验证状态**
+   - `PASS`：记录当前轮为已验证轮。
+   - `REVISE`：一轮只根据 `style_validation.repair_directives` 修正最明显的 2-4 个偏差，再生成新一轮。
+   - `INSUFFICIENT_EVIDENCE`：将相应 domain 标为不支持/外推，或请求更多参考图；不伪造通过结论。
+   - `BLOCKED`：根据 `next_step` 返回通用质检、补齐输入或停止。
 
-修订原则：一轮只解决最明显的 2-4
-个偏差；优先精准风格词，少堆质量词；删除冲突词。媒介错先修媒介；媒介对但不像先补风格指纹；过曝/油亮/热点先修
-`[LIGHT_COLOR]` 并保留光照 negative。
-
-停止条件：
-
-- 至少完成 2 轮，每轮 4 张图。
-- 当前轮 4 张图全部通过所有硬门槛，且每张 `style_match_score >= 0.9`。
-- 任一图失败或只完成 1 轮，必须继续迭代。
+迭代默认至少 2 轮、最多 3 轮，除非用户明确修改轮次/预算。只有已完成至少 2 轮，且最终轮 `style_validation.status = PASS` 时才打包最终风格 skill。达到轮次或预算上限仍为 `REVISE`时，交付当前最佳草稿和剩余偏差，不无限生成。
 
 ## 8. 16 张材质/纹理锚点
 
@@ -337,6 +297,8 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
 材质图应是中性材质样本、材质球或简单材质块，不得做成复杂道具、角色或场景。每个
 `materials/*_base_style.md`
 只写该材质的反射/粗糙度、纹理频率、边缘高光、磨损/裂纹/纤维/气泡等微细节、与整体色彩系统的关系。
+
+每张材质图也必须先通过 `image-quality-check`。只有参考图或 `style_spec` 对该材质有 `OBSERVED` 证据时，才将其交给 `validate-style-match` 作忠实匹配验证；没有直接证据的材质标为 `SYNTHESIZED`，只检查通用质量和与已验证不变量的相容性，不声称已与原参考严格匹配。
 
 ## 9. 最终新 skill 产物
 
@@ -478,29 +440,18 @@ generated_style_skill:
 fit_notes:
   macro_medium: pure_3d_render | pure_2d | 2_5d | 2d_3d_hybrid | realistic_photography
   best_iteration: ...
-  style_match_score: ...
+  quality_gate: PASS | PASS_WITH_NOTES
+  style_validation_status: PASS
+  evidence_coverage:
+    observed: []
+    inferred: []
+    synthesized: []
+    unsupported: []
   stable_traits: []
   remaining_minor_differences: []
 router_summary:
   subject_routes: [face, full_body, environment, object, mixed]
-  material_routes: [
-    skin,
-    hair,
-    fabric,
-    leather,
-    metal,
-    glass,
-    plastic,
-    wood,
-    stone,
-    ceramic,
-    paper,
-    liquid,
-    emissive,
-    rubber,
-    makeup,
-    foliage,
-  ]
+  material_routes: [skin, hair, fabric, leather, metal, glass, plastic, wood, stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage]
 ```
 
 不要输出冗长实验日志，除非用户要求。若保留过程文件，只能写
@@ -511,16 +462,16 @@ router_summary:
 - 已读取 [prompt_formula.md](prompt_formula.md)。
 - 已判定大类媒介，且没有默认写成 2.5D。
 - 已记录 `style_signal_split`。
+- 已生成 `style_spec`，包含参考来源、目标领域、可观察特征、条件规则和不支持领域。
 - `[BASE_STYLE]` 包含风格指纹，不只是管线词；没有内容污染。
-- `[LIGHT_COLOR]` 使用柔和全局光 / 大面积面光源 /
-  受控高光；绘画媒介转译为大色块和柔和笔触。
-- `[NEGATIVE]` 含过曝、油亮、点光源热点、闪点污染稳定负面项。
-- 至少完成 2 轮，每轮真实生成并检查 4 张候选图。
-- 任一候选图未通过媒介、风格指纹或光照质量门槛时已继续迭代；全身候选图未通过
-  `full_body_life_gate` 时已继续迭代。
+- `[LIGHT_COLOR]` 和 `[NEGATIVE]` 已服从参考证据与实际生成失败，没有把柔光或去高光当成普适默认。
+- 每张候选图都已获得 `image-quality-check` 的 `quality_result`；未通过图没有进入风格验证。
+- 每轮合格候选集都已获得 `validate-style-match` 的 `style_validation`，生产技能没有覆盖验证结论。
+- 至少完成 2 轮，未超过用户授权的轮次/预算上限，最终轮 `style_validation.status = PASS`。
 - 已生成 16
   张独立材质/纹理锚点；工具支持时已并发；没有宫格、合集、atlas、contact sheet
   或裁切图。
+- 所有材质图已通过通用质检；没有直接参考证据的材质已标为 `SYNTHESIZED`。
 - 已创建全新的、未覆盖既有目录的 skill 文件夹；文件夹名和 skill name
   与用户输入语言一致。
 - 已按规定目录结构创建最终 skill；所有 Markdown 均包含可执行的真实内容，所有 PNG 均是可解码的真实图片，没有空文件或占位文件。

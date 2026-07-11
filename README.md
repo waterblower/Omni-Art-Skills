@@ -13,9 +13,12 @@
 3. [image-art-direction](image-art-direction/SKILL.md)：美术指导；制定图片风格、分析参考图、审查候选图和生成后质检。
 4. [character-reference-pipeline](character-reference-pipeline/SKILL.md)：角色资产导演；建立正脸、背面、立绘、服装状态等标准角色资产。
 5. [image-generation-plan](image-generation-plan/SKILL.md)：图片制片 / 任务编排；把镜头组、制作包和资产整理为逐张图片生成 TOML 任务。
-6. [video-prompt-director](video-prompt-director/SKILL.md)：视频导演；把镜头组或场景段落转成可执行视频提示词。
-7. [manga-creation-pipeline](manga-creation-pipeline/SKILL.md)：漫画导演；发展漫画章节、分格页和漫画图任务。
-8. [style-distill](style-distill/SKILL.md)：Codex/Hermes 通用的纯美术风格提取/萃取/蒸馏/迭代；用户说 distill、extract、提取、萃取、反推风格时触发；按 [prompt_formula.md](style-distill/prompt_formula.md) 反推，至少迭代2轮，每轮生成脸部特写、人物全身、纯环境、物品近景4张候选图，严格对比参考图风格指纹，尤其检查2D/3D混合、头发塑料高光和特殊风格化处理；除非原始参考图就是如此，否则头发塑料高光必须判失败，全部合格且已过第2轮才停止。
+6. [image-quality-check](image-quality-check/SKILL.md)：通用图片质量闸门；检查文件、内容、身份、解剖、物理、构图和生成伪影，不负责风格相似度。
+7. [validate-style-match](validate-style-match/SKILL.md)：独立风格匹配验证；只比较质量合格候选图与参考风格，返回证据、状态和修订指令，不生图、不改提示词。
+8. [video-prompt-director](video-prompt-director/SKILL.md)：视频导演；把镜头组或场景段落转成可执行视频提示词。
+9. [manga-creation-pipeline](manga-creation-pipeline/SKILL.md)：漫画导演；发展漫画章节、分格页和漫画图任务。
+10. [style-distill](style-distill/SKILL.md)：风格生产与迭代调度；提取 `style_spec`、生成候选图、依次调用 `image-quality-check` 和 `validate-style-match`，再根据两类修订指令迭代并打包最终风格技能。
+11. [cover-image](cover-image/SKILL.md)：从参考图制作中文视频封面和缩略图。
 
 # Contact Me 联系我
 ![](./.docs/wechat.svg)

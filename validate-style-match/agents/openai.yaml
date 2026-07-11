@@ -1,0 +1,4 @@
+interface:
+  display_name: "Validate Style Match"
+  short_description: "Validate generated images against a target style"
+  default_prompt: "Use $validate-style-match to compare candidate images with reference images and return an evidence-based style verdict."
