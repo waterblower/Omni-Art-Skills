@@ -1,7 +1,7 @@
 ---
 name: style-prompt-iteration
 description: Codex/ChatGPT 专用的纯美术风格获取、提取、萃取、蒸馏和迭代技能。用户说 get style、distill style、extract style、style extraction、style distillation、获取风格、提取风格、萃取画风、反推风格等任何中英文类似意图时触发完整 pipeline：先判定参考图媒介大类（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），再真实生成候选图、读图对比、自我修正，至少完成2轮4类验证图迭代，并独立并发生成16张材质/纹理锚点图，最终产出可复用的新风格 skill 文件夹。禁止只输出提示词或只生成 prompt 文件。
-version: 1.4.1
+version: 1.4.3
 author: Hermes Agent
 license: MIT
 metadata:
@@ -80,6 +80,29 @@ macro_medium:
 
 大类判错时后续全部失败。纯 3D 不得写成 2.5D / digital painting / anime illustration；纯 2D 不得写 PBR / SSS / ray-traced；混合风格必须分别描述 2D 层和 3D 层。
 
+### 2.1 纯 2D 与 2.5D 的强制辨别
+
+不得因为参考图“看起来像动画/插画”就默认判为 `pure_2d`。尤其要区分以下两种表面语言：
+
+- `pure_2d` 水粉、纸本、画册式插画：可见纸纹/画布纹理、干刷、破碎笔触、综合色块或线稿主导，体积主要由明确色块或可见笔触构成。
+- `2_5d` 平滑精修数字插画：即使没有真实 3D 管线，也可能具有低笔触可见度、平滑渐变、软面塑形、局部精准高光、清楚的材质分区和接近渲染图的体积完整性。
+
+若参考图表面干净、皮肤与衣料过渡平滑、金属/皮革高光精确、几乎没有纸纹或干刷证据，应优先考虑 `2_5d`，不得仅凭“手绘感”写成 `pure_2d`、`gouache`、`paper grain` 或 `storybook painting`。
+
+必须额外记录：
+
+```yaml
+surface_language:
+  visible_brushwork: low | medium | high
+  paper_or_canvas_grain: absent | subtle | dominant
+  value_transition: flat_blocks | softened_blocks | smooth_gradients
+  material_separation: weak | moderate | precise
+  highlight_design: diffuse | painted_selective | render_like_precise
+  likely_failure_if_misread: ...
+```
+
+如果这些证据相互冲突，降低媒介置信度，并用第一轮候选专门验证“平滑精修 2.5D”与“纸本/水粉纯 2D”的差异；不得在未验证前锁定带强媒介偏向的词。
+
 ## 3. 风格提取边界
 
 ### 必须进入风格 prompt
@@ -109,6 +132,28 @@ style_signal_split:
 ```
 
 把 `[BASE_STYLE]` 中媒介/管线词删掉后，剩余词仍必须能描述可识别画风。
+
+### 风格相似不等于题材相似
+
+以下因素只能作为内容或弱辅助信号，不能证明风格匹配：
+
+- 相同的蓝绿、土黄、棕色配色。
+- 相同的幻想旅行者、盔甲、皮带、刀剑、草原、远山、蓝天白云等题材。
+- 相同的性别、发色、服装时代、世界观或构图氛围。
+- 都显得“高质量”“精致”“像动画”或“像概念设计”。
+
+即使题材与配色高度相似，只要表面语言、人物造型、明暗语法、材质响应、边缘层级或细节频率明显不同，就必须判为风格失败。不得用内容相似抵消纯美术风格偏差。
+
+### 细节必须服务结构，禁止伪高细节
+
+“高细节”不是在过渡区域铺满小纹样、草叶、花朵、褶皱、挂件、划痕或装饰线。必须区分：
+
+- `structural_detail`：解释形体转折、受力、材料构造、功能连接、焦点叙事或空间层次的细节；它会随尺度、遮挡、受光和材质而变化。
+- `filler_detail`：没有结构或叙事作用、在相近尺度上机械重复的花纹、植被、饰件、笔触或噪点；它只是把过渡区域填满，制造“看似高细节”。
+
+在 `[BASE_STYLE]` 中必须记录参考图的细节预算与留白：焦点区域可以精细，但中间层和背景须保留安静的大形、清晰节奏和可呼吸的负空间。不得把“精致”“复杂”“rich detail”“intricate”“ornate”当作无条件质量词；只有参考图确有对应证据时才能使用，并必须限定其位置、尺度和功能。
+
+对人物服饰，纹样、缝线、扣件和褶皱必须服从衣料裁片、关节、受力与视线焦点；不能在每一块布料上均匀铺装饰。对植被，先建立地形大块、疏密节奏和远近层次，再在少量近景焦点添加物种可辨识细节；不得以重复草叶、雏菊、灌木团或同一笔触纹样填满坡地。
 
 ## 4. 全局光照质量门槛
 
@@ -179,12 +224,39 @@ test_set:
 
 每轮必须打开 4 张候选图逐张检查。忽略具体主体、服装、道具、场景、构图、日夜、动作、剧情；只评估纯美术风格。
 
+对比时必须先做一次“去内容化检查”：在心里忽略人物身份、服装、道具、草原、天空和主色，只比较以下六个独立维度。每个维度都要写证据，不能只给总分：
+
+1. `surface_language`：平滑或粗糙；纸纹、画布纹、干刷和笔触的可见度。
+2. `character_shape_language`：年龄感、五官比例、眼鼻口简化方式、下颌与身体比例的理想化方式。
+3. `value_and_edge_grammar`：渐变或色块、软硬边分布、轮廓是否封闭、焦点边缘是否更清楚。
+4. `material_response`：皮肤、头发、布、皮革、金属是否具有参考图相同的高光宽度、粗糙度和材质分离。
+5. `detail_frequency`：细节集中于焦点还是平均铺满全画面；背景是否与参考图同样简化。
+6. `color_structure`：不只比较色相，还要比较明度范围、饱和度、冷暖分配、空气透视和亮部是否通透。
+
+还必须检查 `detail_integrity`：逐区确认细节是否解释结构，而非用重复模式冒充完成度。重点检查人物服装的花纹/褶皱/挂件，以及植被、石块、云层等背景过渡区。出现以下任何一项都必须记录为失败：
+
+- 过渡区域被同尺度的花纹、扣件、草叶、花朵或装饰线平均填满，导致没有安静的中间层。
+- 同一种微小纹样或笔触连续重复，改变位置却不改变尺度、方向、遮挡、受光或功能。
+- 服饰装饰不跟随裁片、缝合线、褶皱与受力；植被细节不服从地形、景深与景别。
+- 背景的高频细节与主体争夺注意力，或远景仍保有近景同等的细节密度。
+
+评估时问三个问题：删去这处细节后形体、材质、功能或焦点会不会受损？它是否随对象结构而变化？它是否只在应当精细的位置出现？三个答案若均为否，即为 `filler_detail`，不得以“复杂、精致、丰富”评分加分。
+
+特别警惕以下伪匹配：参考图是平滑、低纹理、精确材质分区的 2.5D 精修插画，而候选图只是用了相近配色与幻想题材，却呈现纸张颗粒、干刷水粉、复古画册、成熟写实骨相或平均铺陈的繁复细节。此类候选即使“很好看”，`style_fingerprint_gate` 也必须失败，建议总分不得高于 `0.6`。
+
 硬门槛：
 
 - `macro_medium_gate`：候选图主媒介必须与参考图一致。
 - `style_fingerprint_gate`：不能只是同媒介/同管线/同质量；必须匹配形状语言、比例理想化、边缘层级、明暗语法、材质细节频率、色彩配比、完成度边界。
+- `surface_language_gate`：可见笔触、纸/画布纹理、平滑度、渐变方式必须匹配；参考图低纹理时，候选不得擅自加入明显水粉、干刷、旧纸或粗画布质感。
+- `character_design_gate`：人物测试必须匹配参考图的年龄感、动画化程度、五官简化与身体比例；“都是漂亮人物”不算通过。
+- `material_response_gate`：至少分别检查皮肤、头发、布料、皮革/金属；候选不得把参考图清楚区分的材质统一处理成同一种干燥或油亮表面。
+- `detail_distribution_gate`：焦点与背景的细节分配必须匹配；不得用全画面繁复细节替代参考图的选择性精细与安静背景。
+- `detail_integrity_gate`：每一类高频细节都必须服务结构、材料、受力、空间或焦点；服饰花纹和背景植被不得以单一重复模式填充过渡区域、伪造高细节。
 - `lighting_quality_gate`：不得过曝、油亮、点光源热点、硬闪光、星点污染、不受控 glossy 高光。
 - `full_body_life_gate`：全身图必须有形体体积、肌肉/皮肤平面、重心、肢体张力、衣料受力；脸和配色接近不能抵消身体失败。
+
+全身图与参考图景别不同时，必须使用 `face_closeup` 校验人脸与表面语言，再使用 `full_body` 校验人体和服装；不得只凭全身图与参考图共享天空、服装或色调便判定通过。环境和物品测试也不得反向掩盖人物风格失败。
 
 报告格式：
 
@@ -193,6 +265,11 @@ iteration: 1
 tests:
   macro_medium_gate: {pass: false, reason: ...}
   style_fingerprint_gate: {pass: false, reason: ...}
+  surface_language_gate: {pass: false, reason: ...}
+  character_design_gate: {pass: false, reason: ...}
+  material_response_gate: {pass: false, reason: ...}
+  detail_distribution_gate: {pass: false, reason: ...}
+  detail_integrity_gate: {pass: false, reason: ...}
   lighting_quality_gate: {pass: false, reason: ...}
   face_closeup: {style_match_score: 0.72, pass: false, missing_or_weak: [], excess_or_wrong: []}
   full_body: {style_match_score: 0.80, pass: false, missing_or_weak: [], excess_or_wrong: []}
@@ -208,6 +285,10 @@ stop: false
 ```
 
 修订原则：一轮只解决最明显的 2-4 个偏差；优先精准风格词，少堆质量词；删除冲突词。媒介错先修媒介；媒介对但不像先补风格指纹；过曝/油亮/热点先修 `[LIGHT_COLOR]` 并保留光照 negative。
+
+如果候选被错误推向水粉/旧画册质感，而参考图实际平滑精修，必须删除或否定冲突词，例如 `gouache`、`paper grain`、`canvas texture`、`dry brush`、`storybook painting`、`vintage illustration`、`visible brushwork`，并明确补入 `smooth digitally painted surfaces`、`low visible brush texture`、`soft airbrushed planar modeling`、`precise material separation`、`selective crisp highlights`。反之亦然：参考图确有纸本和笔触证据时，不得用平滑 2.5D 词抹掉它们。
+
+如果候选出现伪高细节，修订时优先删除笼统的细节加码词与内容噪声词，例如 `intricate patterns everywhere`、`rich ornamental details`、`dense foliage`、`many accessories`、`highly detailed background`、`abundant flowers`。改为按焦点和结构正向约束，例如 `selective structural detail at focal seams and functional joints`、`quiet broad midtone areas between focal details`、`sparse vegetation grouped by terrain and depth`、`simplified distant foliage masses`、`ornament limited to functional borders`。必要时在 `[NEGATIVE]` 增加 `repetitive filler detail`, `uniform ornamental patterning`, `dense repetitive foliage`, `busy transition areas`, `detail noise`。
 
 停止条件：
 
@@ -360,12 +441,15 @@ router_summary:
 
 - 已读取 [prompt_formula.md](prompt_formula.md)。
 - 已判定大类媒介，且没有默认写成 2.5D。
+- 已单独记录 `surface_language`，并用可见笔触、纸/画布纹理、过渡方式、材质分区和高光设计区分 `pure_2d` 与 `2_5d`。
 - 已记录 `style_signal_split`。
+- 没有把相近配色、幻想题材、服装、草原、蓝天白云或“高质量感”当作风格匹配证据。
+- 已检查人物服饰与背景植被的细节完整性；没有把重复花纹、挂件、草叶、花朵或笔触当作高细节。
 - `[BASE_STYLE]` 包含风格指纹，不只是管线词；没有内容污染。
 - `[LIGHT_COLOR]` 使用柔和全局光 / 大面积面光源 / 受控高光；绘画媒介转译为大色块和柔和笔触。
 - `[NEGATIVE]` 含过曝、油亮、点光源热点、闪点污染稳定负面项。
 - 至少完成 2 轮，每轮真实生成并检查 4 张候选图。
-- 任一候选图未通过媒介、风格指纹、光照质量或全身生命力门槛时已继续迭代。
+- 任一候选图未通过媒介、表面语言、人物造型、材质响应、细节分布、细节完整性、风格指纹、光照质量或全身生命力门槛时已继续迭代。
 - 已生成 16 张独立材质/纹理锚点；工具支持时已并发；没有宫格、合集、atlas、contact sheet 或裁切图。
 - 已按“用户指定路径优先，否则使用 `pwd`”确定输出位置。
 - 创建前已检查目标名称；若同名文件夹存在，已使用递增后缀选择从未存在的新名称，没有覆盖、合并、删除、重命名、复用或写入任何已有文件夹。
