@@ -1,7 +1,7 @@
 ---
 name: style-prompt-iteration
 description: Codex/ChatGPT 专用的纯美术风格获取、提取、萃取、蒸馏和迭代技能。用户说 get style、distill style、extract style、style extraction、style distillation、获取风格、提取风格、萃取画风、反推风格等任何中英文类似意图时触发完整 pipeline：先判定参考图媒介大类（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），再真实生成候选图、读图对比、自我修正，至少完成2轮4类验证图迭代，并独立并发生成16张材质/纹理锚点图，最终产出可复用的新风格 skill 文件夹。禁止只输出提示词或只生成 prompt 文件。
-version: 1.4.4
+version: 1.4.5
 author: Hermes Agent
 license: MIT
 metadata:
@@ -343,54 +343,55 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
 
 ```text
 <style-name>-style-generator/
-  SKILL.md
-  references/
-    source_01.png
-    source_02.png
-    source_03.png
-    shared_style_invariants.md
-    router.md
-    face.png
-    face_base_style.md
-    full_body.png
-    full_body_base_style.md
-    environment.png
-    environment_base_style.md
-    object.png
-    object_base_style.md
-    materials/
-      skin.png
-      skin_base_style.md
-      hair.png
-      hair_base_style.md
-      fabric.png
-      fabric_base_style.md
-      leather.png
-      leather_base_style.md
-      metal.png
-      metal_base_style.md
-      glass.png
-      glass_base_style.md
-      plastic.png
-      plastic_base_style.md
-      wood.png
-      wood_base_style.md
-      stone.png
-      stone_base_style.md
-      ceramic.png
-      ceramic_base_style.md
-      paper.png
-      paper_base_style.md
-      liquid.png
-      liquid_base_style.md
-      emissive.png
-      emissive_base_style.md
-      rubber.png
-      rubber_base_style.md
-      makeup.png
-      makeup_base_style.md
-      foliage.png
-      foliage_base_style.md
+    SKILL.md
+    references/
+        sources/
+            1.png
+            2.png # if any
+            etc.
+        shared_style_invariants.md
+        router.md
+        face.png
+        face_base_style.md
+        full_body.png
+        full_body_base_style.md
+        environment.png
+        environment_base_style.md
+        object.png
+        object_base_style.md
+        materials/
+            skin.png
+            skin_base_style.md
+            hair.png
+            hair_base_style.md
+            fabric.png
+            fabric_base_style.md
+            leather.png
+            leather_base_style.md
+            metal.png
+            metal_base_style.md
+            glass.png
+            glass_base_style.md
+            plastic.png
+            plastic_base_style.md
+            wood.png
+            wood_base_style.md
+            stone.png
+            stone_base_style.md
+            ceramic.png
+            ceramic_base_style.md
+            paper.png
+            paper_base_style.md
+            liquid.png
+            liquid_base_style.md
+            emissive.png
+            emissive_base_style.md
+            rubber.png
+            rubber_base_style.md
+            makeup.png
+            makeup_base_style.md
+            foliage.png
+            foliage_base_style.md
     negative_prompt.md
     generation_formula.md
 ```
