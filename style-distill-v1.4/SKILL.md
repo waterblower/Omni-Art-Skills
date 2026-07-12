@@ -1,7 +1,7 @@
 ---
 name: style-prompt-iteration
 description: Codex/ChatGPT 专用的纯美术风格获取、提取、萃取、蒸馏和迭代技能。用户说 get style、distill style、extract style、style extraction、style distillation、获取风格、提取风格、萃取画风、反推风格等任何中英文类似意图时触发完整 pipeline：先判定参考图媒介大类（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），再真实生成候选图、读图对比、自我修正，至少完成2轮4类验证图迭代，并独立并发生成16张材质/纹理锚点图，最终产出可复用的新风格 skill 文件夹。禁止只输出提示词或只生成 prompt 文件。
-version: 1.4.0
+version: 1.4.1
 author: Hermes Agent
 license: MIT
 metadata:
@@ -230,7 +230,14 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
 
 ## 9. 最终新 skill 产物
 
-默认必须在当前 agent 运行的 working directory（`pwd`）下创建一个新 skill 文件夹，名称用 hyphen-case，例如如果当前 `pwd` 是 `X`，最终产物应放在 `X/<style-name>-style-generator/`。不要只在对话中贴 prompt。不要创建 `examples/`、`specs/`、README、CHANGELOG、INSTALLATION_GUIDE。
+必须创建全新的 skill 文件夹，落盘位置按以下优先级确定：
+
+1. 用户明确指定输出路径时，写到该路径下。
+2. 用户未指定输出路径时，写到当前 agent 的 working directory（`pwd`）下。
+
+文件夹名称必须使用 hyphen-case，例如 `<style-name>-style-generator`。创建前必须检查目标路径是否已经存在；禁止覆盖、合并、清空、删除、重命名或复用任何已有文件夹。若候选名称已存在，必须改用一个从未存在的新名称，例如依次尝试 `<style-name>-style-generator-2`、`<style-name>-style-generator-3`，直到找到未占用名称，再创建并写入。即使已有文件夹看起来是旧版本、空目录或本次任务的同类产物，也不得写入其中；始终使用新名称（always a new name）。
+
+除创建这个全新产物文件夹外，不得修改输出位置中的任何已有文件或文件夹。不要只在对话中贴 prompt。不要创建 `examples/`、`specs/`、README、CHANGELOG、INSTALLATION_GUIDE。
 
 目录结构：
 
@@ -360,5 +367,7 @@ router_summary:
 - 至少完成 2 轮，每轮真实生成并检查 4 张候选图。
 - 任一候选图未通过媒介、风格指纹、光照质量或全身生命力门槛时已继续迭代。
 - 已生成 16 张独立材质/纹理锚点；工具支持时已并发；没有宫格、合集、atlas、contact sheet 或裁切图。
-- 已创建新 skill 文件夹，含 [SKILL.md](SKILL.md)、`references/router.md`、`shared_style_invariants.md`、4 张主体 reference、16 张材质 reference、各自 `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
+- 已按“用户指定路径优先，否则使用 `pwd`”确定输出位置。
+- 创建前已检查目标名称；若同名文件夹存在，已使用递增后缀选择从未存在的新名称，没有覆盖、合并、删除、重命名、复用或写入任何已有文件夹。
+- 已创建全新 skill 文件夹，含 [SKILL.md](SKILL.md)、`references/router.md`、`shared_style_invariants.md`、4 张主体 reference、16 张材质 reference、各自 `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
 - 所有记录、产物文件和最终回复中的路径均为相对路径，没有全局/绝对路径。
