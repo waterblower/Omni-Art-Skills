@@ -315,63 +315,7 @@ name 必须与用户输入语言一致：用户用英文提出风格需求时使
 创建方式硬约束：直接按下方“目录结构”创建全新 skill，所有 Markdown 必须包含可执行的真实内容，所有 PNG 必须是可解码的真实图片，不得创建空文件或占位文件。`original/` 与 `iterations/` 必须按真实数量整理：原始输入图有几张就保留几张；实际生成了几轮就创建几个 `iterations/iterationN/` 目录，不得保留没有真实产物的空目录。
 
 ### 目录结构：
-```
-<style-name>-style/
-    SKILL.md
-    references/
-        shared_style_invariants.md
-        router.md
-        face_base_style.md
-        full_body_base_style.md
-        environment_base_style.md
-        object_base_style.md
-        negative_prompt.md
-        generation_formula.md
-        materials/
-            skin.png
-            skin_base_style.md
-            hair.png
-            hair_base_style.md
-            fabric.png
-            fabric_base_style.md
-            leather.png
-            leather_base_style.md
-            metal.png
-            metal_base_style.md
-            glass.png
-            glass_base_style.md
-            plastic.png
-            plastic_base_style.md
-            wood.png
-            wood_base_style.md
-            stone.png
-            stone_base_style.md
-            ceramic.png
-            ceramic_base_style.md
-            paper.png
-            paper_base_style.md
-            liquid.png
-            liquid_base_style.md
-            emissive.png
-            emissive_base_style.md
-            rubber.png
-            rubber_base_style.md
-            makeup.png
-            makeup_base_style.md
-            foliage.png
-            foliage_base_style.md
-    # archival only: original input images, never loaded by router during normal use
-    original/
-        image1.png # duplicate/add/remove to match the real number of input images
-    # archival only: all output images generated during iterations, never loaded by router during normal use
-    iterations/
-        iteration1/
-            face.png
-            full_body.png
-            environment.png
-            object.png
-        # add iteration2/, iteration3/, ... only when those iterations actually exist
-```
+Should be created according to the target structure described in [target_structure.md](target_structure.md).
 
 4 类主体风格描述必须来自真实迭代产出，但最后一轮的
 `face.png`、`full_body.png`、`environment.png`、`object.png` 不得复制到
@@ -487,3 +431,11 @@ router_summary:
   `iterations/`；入口 SKILL 和 router 明确排除这些过程图，正常生成新图时不会读取或使用它们。
 - `references/` 下没有保存 `face.png`、`full_body.png`、`environment.png`、`object.png`；这些候选图只存在于 `iterations/`。
 - 所有记录、产物文件和最终回复中的路径均为相对路径，没有全局/绝对路径。
+
+## 12. 最终结构验证
+
+完成全部产物后，用Deno运行[./validate-generated-skill.ts](validate-generated-skill.ts)来检查格式。
+
+必须把 `<生成的技能目录>` 替换为本次实际产出的 skill 根目录。退出码为
+`0` 时，才可标记 `files_ready: true` 并交付。退出码为 `1` 时，读取
+stderr 中报告的不符合项，修正后重新运行；验证通过前不得标记完成。
