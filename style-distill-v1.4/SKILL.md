@@ -1,7 +1,7 @@
 ---
 name: style-prompt-iteration
 description: Codex/ChatGPT 专用的纯美术风格获取、提取、萃取、蒸馏和迭代技能。用户说 get style、distill style、extract style、style extraction、style distillation、获取风格、提取风格、萃取画风、反推风格等任何中英文类似意图时触发完整 pipeline：先判定参考图媒介大类（纯2D、纯3D渲染、2.5D、2D+3D混合、真实摄影），再真实生成候选图、读图对比、自我修正，至少完成2轮4类验证图迭代，并独立并发生成16张材质/纹理锚点图，最终产出可复用的新风格 skill 文件夹。禁止只输出提示词或只生成 prompt 文件。
-version: 1.4.3
+version: 1.4.4
 author: Hermes Agent
 license: MIT
 metadata:
@@ -95,6 +95,9 @@ macro_medium:
 surface_language:
   visible_brushwork: low | medium | high
   paper_or_canvas_grain: absent | subtle | dominant
+  global_noise_or_speckle: absent | subtle | dominant
+  texture_distribution: none | localized | global
+  texture_evidence_regions: []
   value_transition: flat_blocks | softened_blocks | smooth_gradients
   material_separation: weak | moderate | precise
   highlight_design: diffuse | painted_selective | render_like_precise
@@ -102,6 +105,14 @@ surface_language:
 ```
 
 如果这些证据相互冲突，降低媒介置信度，并用第一轮候选专门验证“平滑精修 2.5D”与“纸本/水粉纯 2D”的差异；不得在未验证前锁定带强媒介偏向的词。
+
+### 2.2 纹理与噪点默认禁入
+
+不得把 `pure_2d`、水粉、纸本、复古画册或手绘感自动翻译为全画面颗粒。`grain`、`paper grain`、`film grain`、`noise`、`speckle`、`stippling`、`screenprint dots`、`chalk dust`、`scumble` 等会产生高频噪点的词默认禁止进入 `[BASE_STYLE]`、`[LIGHT_COLOR]`、材质 prompt 和生成公式。
+
+只有参考图中能明确指出至少两个实际区域，并确认颗粒是稳定的媒介特征而非压缩伪影、缩放锯齿、截图噪声或纸张扫描脏点时，才允许加入对应纹理词。即使允许，也必须同时限定：纹理出现在哪些对象/区域、覆盖比例、颗粒尺度、密度和强度；默认使用 `localized`, `sparse`, `low-density`, `large-scale broken brush texture`，禁止 `all-over`, `uniform`, `fine-grain overlay`, `dense speckle`。
+
+参考图未见明确颗粒证据时，必须正向写入 `clean broad color fields`, `quiet smooth midtone areas`, `no added texture overlay`，并在 `[NEGATIVE]` 加入 `film grain`, `digital noise`, `uniform paper grain`, `dense speckle`, `all-over stippling`, `texture overlay`, `compression-like artifacts`。真实摄影只有在参考照片本身存在可辨识且风格化的胶片颗粒时例外。
 
 ## 3. 风格提取边界
 
@@ -171,7 +182,7 @@ style_signal_split:
 - 3D/摄影：area lights / softboxes / bounced light，而不是 point lights / hard flash / tiny hotspot。
 - 2D/2.5D/绘画：大面积色块、柔和笔触、低噪声明暗过渡、受控局部提亮，而不是碎亮点、油亮线、高频闪烁反光。
 
-`[LIGHT_COLOR]` 必须包含柔和全局光、大面积面光源、受控高光。`[NEGATIVE]` 必须包含：`overexposed highlights`, `blown-out whites`, `oily wet shine`, `greasy specular reflections`, `point-light hotspots`, `sparkle pollution`, `harsh flash lighting`, `uncontrolled glossy reflections`。这些是稳定失败防线，不受“少写 negative”的一般原则限制。
+`[LIGHT_COLOR]` 必须包含柔和全局光、大面积面光源、受控高光。`[NEGATIVE]` 必须包含：`overexposed highlights`, `blown-out whites`, `oily wet shine`, `greasy specular reflections`, `point-light hotspots`, `sparkle pollution`, `harsh flash lighting`, `uncontrolled glossy reflections`。参考图没有明确颗粒证据时，还必须包含：`film grain`, `digital noise`, `uniform paper grain`, `dense speckle`, `all-over stippling`, `texture overlay`, `compression-like artifacts`。这些是稳定失败防线，不受“少写 negative”的一般原则限制。
 
 候选图只要出现过曝/油亮/热点/闪点污染，即使其他风格维度接近，也必须失败并继续修订。
 
@@ -233,6 +244,8 @@ test_set:
 5. `detail_frequency`：细节集中于焦点还是平均铺满全画面；背景是否与参考图同样简化。
 6. `color_structure`：不只比较色相，还要比较明度范围、饱和度、冷暖分配、空气透视和亮部是否通透。
 
+另做一次 100% 尺寸的 `noise_overlay_check`：检查天空、皮肤、墙面、衣料中间调和其他大色块。若候选出现参考图没有的均匀细点、砂纸感、扫描脏点、胶片颗粒或压缩噪声膜，必须失败；缩略图看似柔和不能抵消原尺寸的噪点问题。
+
 还必须检查 `detail_integrity`：逐区确认细节是否解释结构，而非用重复模式冒充完成度。重点检查人物服装的花纹/褶皱/挂件，以及植被、石块、云层等背景过渡区。出现以下任何一项都必须记录为失败：
 
 - 过渡区域被同尺度的花纹、扣件、草叶、花朵或装饰线平均填满，导致没有安静的中间层。
@@ -249,6 +262,7 @@ test_set:
 - `macro_medium_gate`：候选图主媒介必须与参考图一致。
 - `style_fingerprint_gate`：不能只是同媒介/同管线/同质量；必须匹配形状语言、比例理想化、边缘层级、明暗语法、材质细节频率、色彩配比、完成度边界。
 - `surface_language_gate`：可见笔触、纸/画布纹理、平滑度、渐变方式必须匹配；参考图低纹理时，候选不得擅自加入明显水粉、干刷、旧纸或粗画布质感。
+- `noise_overlay_gate`：候选不得出现参考图没有的全局颗粒、均匀噪点、砂纸膜、胶片颗粒或压缩伪影；参考图确有颗粒时，候选的区域、覆盖率、尺度、密度和强度也必须匹配。
 - `character_design_gate`：人物测试必须匹配参考图的年龄感、动画化程度、五官简化与身体比例；“都是漂亮人物”不算通过。
 - `material_response_gate`：至少分别检查皮肤、头发、布料、皮革/金属；候选不得把参考图清楚区分的材质统一处理成同一种干燥或油亮表面。
 - `detail_distribution_gate`：焦点与背景的细节分配必须匹配；不得用全画面繁复细节替代参考图的选择性精细与安静背景。
@@ -266,6 +280,7 @@ tests:
   macro_medium_gate: {pass: false, reason: ...}
   style_fingerprint_gate: {pass: false, reason: ...}
   surface_language_gate: {pass: false, reason: ...}
+  noise_overlay_gate: {pass: false, reason: ...}
   character_design_gate: {pass: false, reason: ...}
   material_response_gate: {pass: false, reason: ...}
   detail_distribution_gate: {pass: false, reason: ...}
@@ -288,6 +303,8 @@ stop: false
 
 如果候选被错误推向水粉/旧画册质感，而参考图实际平滑精修，必须删除或否定冲突词，例如 `gouache`、`paper grain`、`canvas texture`、`dry brush`、`storybook painting`、`vintage illustration`、`visible brushwork`，并明确补入 `smooth digitally painted surfaces`、`low visible brush texture`、`soft airbrushed planar modeling`、`precise material separation`、`selective crisp highlights`。反之亦然：参考图确有纸本和笔触证据时，不得用平滑 2.5D 词抹掉它们。
 
+如果候选出现参考图没有的噪点膜，先删除所有会诱发颗粒的媒介词及近义词，不得只靠 negative 抵消；再加入 `clean broad color fields`, `quiet smooth midtone areas`, `no added texture overlay`。只有参考图确有局部纹理证据时，才改写为带区域和密度约束的局部纹理描述。
+
 如果候选出现伪高细节，修订时优先删除笼统的细节加码词与内容噪声词，例如 `intricate patterns everywhere`、`rich ornamental details`、`dense foliage`、`many accessories`、`highly detailed background`、`abundant flowers`。改为按焦点和结构正向约束，例如 `selective structural detail at focal seams and functional joints`、`quiet broad midtone areas between focal details`、`sparse vegetation grouped by terrain and depth`、`simplified distant foliage masses`、`ornament limited to functional borders`。必要时在 `[NEGATIVE]` 增加 `repetitive filler detail`, `uniform ornamental patterning`, `dense repetitive foliage`, `busy transition areas`, `detail noise`。
 
 停止条件：
@@ -308,6 +325,8 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
 ```
 
 材质图应是中性材质样本、材质球或简单材质块，不得做成复杂道具、角色或场景。每个 `materials/*_base_style.md` 只写该材质的反射/粗糙度、纹理频率、边缘高光、磨损/裂纹/纤维/气泡等微细节、与整体色彩系统的关系。
+
+材质锚点同样执行 `noise_overlay_gate`。不得为了表现粗糙度而给所有材质叠加同一种纸纹、砂砾或颗粒膜；粗糙度必须通过该材质自身的结构性纹理、边缘响应和明暗变化表达。只有参考图明确存在统一媒介颗粒时，才允许按其真实分布加入。
 
 ## 9. 最终新 skill 产物
 
@@ -442,14 +461,16 @@ router_summary:
 - 已读取 [prompt_formula.md](prompt_formula.md)。
 - 已判定大类媒介，且没有默认写成 2.5D。
 - 已单独记录 `surface_language`，并用可见笔触、纸/画布纹理、过渡方式、材质分区和高光设计区分 `pure_2d` 与 `2_5d`。
+- 已记录 `global_noise_or_speckle`、`texture_distribution` 与纹理证据区域；没有证据时未加入任何颗粒诱发词。
 - 已记录 `style_signal_split`。
 - 没有把相近配色、幻想题材、服装、草原、蓝天白云或“高质量感”当作风格匹配证据。
 - 已检查人物服饰与背景植被的细节完整性；没有把重复花纹、挂件、草叶、花朵或笔触当作高细节。
 - `[BASE_STYLE]` 包含风格指纹，不只是管线词；没有内容污染。
 - `[LIGHT_COLOR]` 使用柔和全局光 / 大面积面光源 / 受控高光；绘画媒介转译为大色块和柔和笔触。
-- `[NEGATIVE]` 含过曝、油亮、点光源热点、闪点污染稳定负面项。
+- `[NEGATIVE]` 含过曝、油亮、点光源热点、闪点污染稳定负面项；参考图无颗粒证据时也含全局噪点稳定负面项。
 - 至少完成 2 轮，每轮真实生成并检查 4 张候选图。
-- 任一候选图未通过媒介、表面语言、人物造型、材质响应、细节分布、细节完整性、风格指纹、光照质量或全身生命力门槛时已继续迭代。
+- 任一候选图未通过媒介、表面语言、噪点覆盖、人物造型、材质响应、细节分布、细节完整性、风格指纹、光照质量或全身生命力门槛时已继续迭代。
+- 已在 100% 尺寸检查天空、皮肤、墙面、衣料中间调等大色块；候选与材质锚点均通过 `noise_overlay_gate`。
 - 已生成 16 张独立材质/纹理锚点；工具支持时已并发；没有宫格、合集、atlas、contact sheet 或裁切图。
 - 已按“用户指定路径优先，否则使用 `pwd`”确定输出位置。
 - 创建前已检查目标名称；若同名文件夹存在，已使用递增后缀选择从未存在的新名称，没有覆盖、合并、删除、重命名、复用或写入任何已有文件夹。
