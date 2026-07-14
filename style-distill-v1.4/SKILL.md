@@ -36,6 +36,8 @@ metadata:
 
 例外：如果当前任务是在维护/编辑本技能文件本身，不要生成候选图。
 
+产出目录隔离（强制）：使用本技能执行风格提取时，任何任务产出都不得写入本技能目录 `style-distill-v1.4/`，也不得写入其任何子目录；本规则覆盖“当前工作目录”“默认输出目录”或其他相冲突的路径约定。产出包括新风格 skill 文件夹、候选图、材质锚点、过程记录、日志、临时 prompt 和任何中间文件。用户指定路径位于本技能目录内时，必须拒绝该路径并要求其指定技能目录外的位置；未指定输出路径且 `pwd` 位于本技能目录内时，改用该技能目录外的当前项目工作目录，无法安全确定时先询问用户，绝不回写到本技能目录。
+
 ## 1. Prompt 公式
 
 按 [prompt_formula.md](prompt_formula.md) 拼装：
@@ -332,8 +334,11 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
 
 必须创建全新的 skill 文件夹，落盘位置按以下优先级确定：
 
-1. 用户明确指定输出路径时，写到该路径下。
-2. 用户未指定输出路径时，写到当前 agent 的 working directory（`pwd`）下。
+1. 用户明确指定输出路径且该路径不在本技能目录 `style-distill-v1.4/` 内时，写到该路径下。
+2. 用户未指定输出路径时，写到当前 agent 的 working directory（`pwd`）下，但仅限 `pwd` 不在本技能目录内。
+3. 若 `pwd` 位于本技能目录内，改用该技能目录外的当前项目工作目录；若无法安全确定，先询问用户指定输出路径。
+
+无论何种情况，严禁把任何任务产出写入 `style-distill-v1.4/` 或其子目录。用户指定该目录内路径时，不得创建、移动、复制或暂存产出到那里。
 
 文件夹名称必须使用 hyphen-case，例如 `<style-name>-style-generator`。创建前必须检查目标路径是否已经存在；禁止覆盖、合并、清空、删除、重命名或复用任何已有文件夹。若候选名称已存在，必须改用一个从未存在的新名称，例如依次尝试 `<style-name>-style-generator-2`、`<style-name>-style-generator-3`，直到找到未占用名称，再创建并写入。即使已有文件夹看起来是旧版本、空目录或本次任务的同类产物，也不得写入其中；始终使用新名称（always a new name）。
 
@@ -474,6 +479,7 @@ router_summary:
 - 已在 100% 尺寸检查天空、皮肤、墙面、衣料中间调等大色块；候选与材质锚点均通过 `noise_overlay_gate`。
 - 已生成 16 张独立材质/纹理锚点；工具支持时已并发；没有宫格、合集、atlas、contact sheet 或裁切图。
 - 已按“用户指定路径优先，否则使用 `pwd`”确定输出位置。
+- 已确认所有任务产出均位于 `style-distill-v1.4/` 之外；未向该技能目录或任何子目录写入候选图、材质图、记录、临时文件或最终 skill。
 - 创建前已检查目标名称；若同名文件夹存在，已使用递增后缀选择从未存在的新名称，没有覆盖、合并、删除、重命名、复用或写入任何已有文件夹。
 - 已创建全新 skill 文件夹，含 [SKILL.md](SKILL.md)、`references/router.md`、`shared_style_invariants.md`、4 张主体 reference、16 张材质 reference、各自 `*_base_style.md`、`negative_prompt.md`、`generation_formula.md`。
 - 所有记录、产物文件和最终回复中的路径均为相对路径，没有全局/绝对路径。
