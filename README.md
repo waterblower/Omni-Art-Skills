@@ -1,39 +1,41 @@
-# Hermes 全能编导
+# Hermes All-in-One Creative Director
 
-面向 Hermes Agent 与 Codex 工作流的创作技能库，不是普通提示词合集。
+[中文文档](README.zh.md)
 
-它将编剧、导演、美术、角色资产、图片计划、视频提示词、漫画页与制片管理整理为可稳定调用的工作技能。目标是让 Agent 在内容项目中承担“全能编导 + 美术指导 + 制片统筹”的复合角色：理解故事、拆解镜头、管理资产、编排计划、审核画面与维护连续性，并将结果沉淀为可执行文件。
+A creative skill library for Hermes Agent and Codex workflows—not a collection of ordinary prompts.
 
-## 技能列表
+It packages screenwriting, directing, art direction, character assets, image plans, video prompts, comic pages, and production management into reliably callable skills. Its goal is to equip an agent to serve as a combined creative director, art director, and production coordinator on content projects: understanding stories, breaking down shots, managing assets, arranging plans, reviewing images, maintaining continuity, and turning the results into executable files.
 
-### 制片与叙事
+## Skills
 
-1. [creative-production-pipeline](creative-production-pipeline/SKILL.md)：总制片 / 总导演；从故事、设定或分集大纲组织完整 AI 内容生产流水线。
-2. [script-to-shot-table](script-to-shot-table/SKILL.md)：分镜导演；将剧本、梗概、广告脚本或小说段落转为面向图片、视频和漫画生产的镜头组。
-3. [manga-creation-pipeline](manga-creation-pipeline/SKILL.md)：漫画导演；开发漫画章节、镜头组、分格页与漫画图生产流程。
-4. [video-prompt-director](video-prompt-director/SKILL.md)：视频导演；将镜头组或场景段落转为可执行的视频提示词。
+### Production and Narrative
 
-### 美术、资产与图片生产
+1. [creative-production-pipeline](creative-production-pipeline/SKILL.md): Executive producer / director; organizes a complete AI-content production pipeline from a story, setting, or episodic outline.
+2. [script-to-shot-table](script-to-shot-table/SKILL.md): Storyboard director; turns scripts, synopses, advertising scripts, or novel excerpts into shot groups for image, video, and comic production.
+3. [manga-creation-pipeline](manga-creation-pipeline/SKILL.md): Manga director; develops comic chapters, shot groups, panel pages, and comic-image production workflows.
+4. [video-prompt-director](video-prompt-director/SKILL.md): Video director; turns shot groups or scene excerpts into production-ready video prompts.
 
-5. [image-art-direction](image-art-direction/SKILL.md)：美术指导；选择和审查参考图，复核候选图的内容、画质与风格一致性。
-6. [character-reference-pipeline](character-reference-pipeline/SKILL.md)：角色资产导演；建立正脸、背面、立绘、服装状态等可复用的标准角色资产。
-7. [image-generation-plan](image-generation-plan/SKILL.md)：图片制片 / 任务编排；将镜头组、制作包和资产整理为逐张图片生成的 TOML 任务。
-8. [image-quality-check](image-quality-check/SKILL.md)：通用图片质量闸门；检查文件、任务符合度、身份、解剖、物理、构图和生成伪影，不负责风格相似度判断。
-9. [cover-image](cover-image/SKILL.md)：从参考图制作中文视频封面和缩略图。
+### Art Direction, Assets, and Image Production
 
-### 风格提取与迭代
+5. [image-art-direction](image-art-direction/SKILL.md): Art director; selects and reviews reference images, and verifies candidate images for content, quality, and stylistic consistency.
+6. [character-reference-pipeline](character-reference-pipeline/SKILL.md): Character-asset director; creates reusable, standardized character assets such as front views, back views, turnarounds, costumes, and state variations.
+7. [image-generation-plan](image-generation-plan/SKILL.md): Image producer / task planner; turns shot groups, production packages, and assets into TOML tasks for individual image generation.
+8. [image-quality-check](image-quality-check/SKILL.md): General image-quality gate; checks files, task compliance, identity, anatomy, physics, composition, and generation artifacts. It does not assess stylistic similarity.
+9. [cover-image](cover-image/SKILL.md): Creates Chinese video covers and thumbnails from reference images.
 
-10. [style-distill-v1.4](style-distill-v1.4/SKILL.md)：当前维护的纯美术风格提取与迭代技能；从参考图生成候选图、比较修订，并打包可复用的风格技能。
-11. [style-distill-v1.6](style-distill-v1.6/SKILL.md)：风格蒸馏流程版本；通过图片质量检查与独立风格验证组织候选图迭代。
+### Style Extraction and Iteration
 
-## 使用顺序
+10. [style-distill-v1.4](style-distill-v1.4/SKILL.md): The currently maintained skill for pure visual-style extraction and iteration; generates candidate images from references, compares and revises them, and packages reusable style skills.
+11. [style-distill-v1.6](style-distill-v1.6/SKILL.md): A style-distillation workflow version; organizes candidate-image iteration through image-quality checks and independent style validation.
 
-典型影视或 AI 内容项目按“故事 / 设定 → 镜头组 → 资产与美术参考 → 图片生成计划 → 图片或视频生产 → 质量复核”推进。先完成镜头组与资产连续性，再编排逐张图片计划；不要跳过前置生产资料直接批量生成。
+## Recommended Workflow
 
-# Contact Me 联系我
+A typical film, video, or AI-content project proceeds as: “story / setting → shot groups → assets and art references → image-generation plan → image or video production → quality review.” Complete the shot groups and asset-continuity work before planning individual images; do not skip the prerequisite production materials and generate in bulk directly.
+
+# Contact Me
 ![](./.docs/wechat.svg)
-微信
+WeChat
 
-# Sponsor Me 打赏感谢我
+# Sponsor Me
 ![](./.docs/pay.webp)
-微信打赏
+WeChat Tip
