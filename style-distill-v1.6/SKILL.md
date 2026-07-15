@@ -6,8 +6,7 @@ description: >-
   获取风格、提取风格、萃取画风、蒸馏风格、反推风格、生成风格技能 or similar intents from reference images.
   This skill owns style specification, prompt revision, candidate generation,
   iteration control and packaging. It must send every candidate through
-  image-quality-check and then send quality-approved candidates through
-  validate-style-match; it must not perform either validation itself.
+  image-quality-check; it must not perform general quality validation itself.
 ---
 
 # Style Distill / 纯美术风格蒸馏
@@ -28,13 +27,12 @@ description: >-
 2. 查看参考图并判定大类媒介。
 3. 写初版 `style_spec`、`[BASE_STYLE]`、`[LIGHT_COLOR]`、`[NEGATIVE]`。
 4. 按参考覆盖范围和目标用途生成本轮候选图。
-5. 每张候选图立即交给 `image-quality-check`；未通过的图不得进入风格验证。
-6. 将全部通用质检通过的候选图、参考图和 `style_spec` 交给 `validate-style-match`。
-7. 只根据 `quality_result.repair_directives` 或 `style_validation.repair_directives` 修订生产 prompt，然后进入下一轮。
-8. 生成并检查最终材质/纹理锚点图。
-9. 只在最终轮通过独立风格验证后，落盘新风格 skill 文件夹。
+5. 每张候选图立即交给 `image-quality-check`；未通过的图按质量修复指令重生。
+6. 只根据 `quality_result.repair_directives` 修订生产 prompt，然后进入下一轮。
+7. 生成并检查最终材质/纹理锚点图。
+8. 最终轮完成通用质量检查后，落盘新风格 skill 文件夹。
 
-本技能不得自己给候选图作通用质量结论或风格匹配结论，不得覆盖两个验证技能的状态。若没有图片生成工具、工具失败、额度不足或参考图不可读，明确报告阻塞，并只把初版 prompt 标为临时草稿。
+本技能不得自己给候选图作通用质量结论。若没有图片生成工具、工具失败、额度不足或参考图不可读，明确报告阻塞，并只把初版 prompt 标为临时草稿。
 
 路径写法硬约束：任何记录、日志、YAML、Markdown、最终回复和新 skill
 文件中，只能写相对路径；禁止写全局/绝对路径，例如
@@ -60,10 +58,10 @@ description: >-
 
 ### Style specification 生产契约
 
-在生成第一轮候选图前，写出与 `validate-style-match` 兼容的 `style_spec`：
+在生成第一轮候选图前，写出本轮使用的 `style_spec`：
 
 ```yaml
-style_spec:
+style_spec: 
   schema_version: 1
   reference_images: []
   target_model: ""
@@ -203,8 +201,7 @@ style_signal_split:
 - 先提取参考图中的光质、方向、对比、高光形状、阴影语法和反射方式，再写 `[LIGHT_COLOR]`。
 - 硬闪光、点光源、强 rim light、镜面反射、风格化过曝或塑料高光若是参考图的有意特征，必须保留，不得自动写入 `[NEGATIVE]`。
 - 只将参考图没有、且在生成中造成内容不可读或材质污染的额外伪影写入 `[NEGATIVE]`。
-- 通用图片缺陷由 `image-quality-check` 判定；光线是否忠实匹配参考由 `validate-style-match` 判定。
-- 本技能只负责根据两者的 `repair_directives` 修改生产 prompt。
+- 通用图片缺陷由 `image-quality-check` 判定；本技能只根据其 `repair_directives` 修改生产 prompt。
 
 ## 5. 禁用词和 negative 原则
 
@@ -253,7 +250,7 @@ candidates:
     candidate_image: ""
 ```
 
-## 7. 三技能协作与迭代
+## 7. 候选图质检与迭代
 
 每轮严格按以下顺序：
 
@@ -262,21 +259,16 @@ candidates:
 
 2. **通用质量闸门**
    - 对每张候选图使用 `image-quality-check`。
-   - `PASS / PASS_WITH_NOTES` 且 `eligible_for_style_validation = true`：进入风格验证集。
+   - `PASS / PASS_WITH_NOTES`：保留为本轮合格候选。
    - `REGENERATE_MINOR / REGENERATE_MAJOR`：只根据 `quality_result.repair_directives` 重生当前候选；不先改风格规格。
    - `BLOCKED`：停止当前候选链并报告。
 
-3. **独立风格验证**
-   - 只将全部通用质量合格的候选图、参考图和 `style_spec` 交给 `validate-style-match`。
-   - `style-distill` 不重复执行风格判定，也不把预期结论写进验证输入。
+3. **继续生产或打包**
+   - 每轮只根据 `quality_result.repair_directives` 修复最明显的 2-4 个质量问题，再生成新一轮。
+   - 若参考图对相应 domain 没有直接证据，将其在 `style_spec.unsupported_domains` 或生成记录中标为外推，不伪造参考依据。
+   - `BLOCKED`：根据 `next_step` 补齐输入或停止。
 
-4. **消费验证状态**
-   - `PASS`：记录当前轮为已验证轮。
-   - `REVISE`：一轮只根据 `style_validation.repair_directives` 修正最明显的 2-4 个偏差，再生成新一轮。
-   - `INSUFFICIENT_EVIDENCE`：将相应 domain 标为不支持/外推，或请求更多参考图；不伪造通过结论。
-   - `BLOCKED`：根据 `next_step` 返回通用质检、补齐输入或停止。
-
-迭代默认至少 2 轮、最多 3 轮，除非用户明确修改轮次/预算。只有已完成至少 2 轮，且最终轮 `style_validation.status = PASS` 时才打包最终风格 skill。达到轮次或预算上限仍为 `REVISE`时，交付当前最佳草稿和剩余偏差，不无限生成。
+迭代默认至少 2 轮、最多 3 轮，除非用户明确修改轮次/预算。只有已完成至少 2 轮，且最终轮通过通用质量检查时才打包最终风格 skill。达到轮次或预算上限仍需重生时，交付当前最佳草稿和剩余质量问题，不无限生成。
 
 ## 8. 16 张材质/纹理锚点
 
@@ -298,7 +290,7 @@ stone, ceramic, paper, liquid, emissive, rubber, makeup, foliage
 `materials/*_base_style.md`
 只写该材质的反射/粗糙度、纹理频率、边缘高光、磨损/裂纹/纤维/气泡等微细节、与整体色彩系统的关系。
 
-每张材质图也必须先通过 `image-quality-check`。只有参考图或 `style_spec` 对该材质有 `OBSERVED` 证据时，才将其交给 `validate-style-match` 作忠实匹配验证；没有直接证据的材质标为 `SYNTHESIZED`，只检查通用质量和与已验证不变量的相容性，不声称已与原参考严格匹配。
+每张材质图也必须先通过 `image-quality-check`。没有直接参考证据的材质标为 `SYNTHESIZED`，只检查通用质量和与已记录不变量的相容性，不声称已与原参考严格匹配。
 
 ## 9. 最终新 skill 产物
 
@@ -385,7 +377,6 @@ fit_notes:
   macro_medium: pure_3d_render | pure_2d | 2_5d | 2d_3d_hybrid | realistic_photography
   best_iteration: ...
   quality_gate: PASS | PASS_WITH_NOTES
-  style_validation_status: PASS
   evidence_coverage:
     observed: []
     inferred: []
@@ -409,9 +400,8 @@ router_summary:
 - 已生成 `style_spec`，包含参考来源、目标领域、可观察特征、条件规则和不支持领域。
 - `[BASE_STYLE]` 包含风格指纹，不只是管线词；没有内容污染。
 - `[LIGHT_COLOR]` 和 `[NEGATIVE]` 已服从参考证据与实际生成失败，没有把柔光或去高光当成普适默认。
-- 每张候选图都已获得 `image-quality-check` 的 `quality_result`；未通过图没有进入风格验证。
-- 每轮合格候选集都已获得 `validate-style-match` 的 `style_validation`，生产技能没有覆盖验证结论。
-- 至少完成 2 轮，未超过用户授权的轮次/预算上限，最终轮 `style_validation.status = PASS`。
+- 每张候选图都已获得 `image-quality-check` 的 `quality_result`；未通过图已按修复指令处理。
+- 至少完成 2 轮，未超过用户授权的轮次/预算上限，最终轮已通过通用质量检查。
 - 已生成 16
   张独立材质/纹理锚点；工具支持时已并发；没有宫格、合集、atlas、contact sheet
   或裁切图。
