@@ -1,6 +1,6 @@
 ---
 name: cover-image
-description: Create Chinese video cover images and thumbnails from a reference image, especially for AI/tech tutorial covers requiring exact Chinese title text, soft-light 3D-rendered portrait aesthetics, and the standard aspect ratios 16:9, 4:3, and 3:4. Use when the user asks to make, redo, or adjust cover images/thumbnails with a supplied reference image and Chinese text.
+description: Create Chinese video cover images and thumbnails from a reference image, especially for AI/tech tutorial covers requiring exact Chinese title text, soft-light 3D-rendered portrait aesthetics, and exact 16:9, 4:3, and 3:4 aspect ratios. Use when the user asks to make, redo, or adjust cover images/thumbnails with a supplied reference image and Chinese text. Treat 3:4 as a strict ratio that must never be substituted with 2:3.
 ---
 
 # Cover Image
@@ -36,6 +36,7 @@ Use these defaults unless the user says otherwise:
   - `Image2超精度3D渲染`
   - `Codex智能体`
 - Aspect ratios: create exactly three covers by default: one 16:9 cover, one 4:3 cover, and one 3:4 cover.
+- **Hard ratio constraint:** `3:4` means width:height = `3:4`. Never generate, crop, resize, label, or deliver a `2:3` image as the `3:4` cover. These ratios are not interchangeable or acceptable approximations.
 - Exception: create only one cover when the user explicitly asks for a single image or specifies exactly one aspect ratio.
 - Suggested output sizes:
   - 16:9: `1920x1080`
@@ -71,6 +72,7 @@ For 4:3:
 
 For 3:4:
 
+- Lock the canvas to an exact `3:4` width-to-height ratio, preferably `1200x1600`. Do not use `2:3` dimensions such as `1024x1536` or `1200x1800`.
 - Keep the face in the upper half.
 - Put the title in the lower third or lower quarter.
 - Allow text to cover the jacket/body but not the face.
@@ -82,6 +84,7 @@ Use a structured prompt like this, adapting only the user-specific text and rati
 ```text
 Use case: ads-marketing
 Asset type: Chinese video cover thumbnail, <aspect ratio>.
+Canvas ratio: use the exact requested width:height ratio. For 3:4, use an exact 3:4 canvas such as 1200x1600; never use or substitute 2:3.
 Input image: use the provided image as the primary visual reference. Preserve the same realistic ultra-detailed 3D-rendered subject, face identity, soft skin, detailed hair, clothing, and gentle soft daylight from the reference image.
 Primary request: Create a polished Chinese video cover with a bright, soft look. Avoid harsh contrast, smoky dark grading, heavy black shadows, and action-poster lighting. Keep the palette close to the reference: soft neutral daylight, warm skin tones, airy background, refined high-precision 3D render feeling.
 Text (verbatim, two lines only):
@@ -89,7 +92,7 @@ Text (verbatim, two lines only):
 "<line 2>"
 Typography: bold modern title type, large and readable; first line white, second line warm gold or another user-approved accent; subtle outline/shadow only enough for readability.
 Composition/framing: <ratio-specific placement>. Text may overlap body/clothing, but must not cover eyes, nose, mouth, or the main face area.
-Constraints: Chinese text must be exactly the two lines above, no misspellings, no extra text, no watermark.
+Constraints: Chinese text must be exactly the two lines above, no misspellings, no extra text, no watermark. Aspect ratio must be exact; 3:4 must never become 2:3.
 ```
 
 ## Validation
@@ -101,6 +104,7 @@ Before finishing:
 3. Confirm lighting remains soft and not significantly darker than the reference.
 4. Confirm text does not cover the face.
 5. Confirm that the default output set is three images: 16:9, 4:3, and 3:4, unless the user explicitly requested one image.
-6. Confirm that no files were created unless the user provided a concrete save destination outside this skill directory.
-7. If files were saved because the user provided an explicit destination path, confirm dimensions with an image tool such as `sips -g pixelWidth -g pixelHeight` and report the saved paths and dimensions.
-8. If files were not saved, present the generated images directly in the conversation and identify their aspect ratios.
+6. Verify the actual pixel dimensions of every output, including images delivered only in the conversation. For the 3:4 cover, confirm `4 × pixel width = 3 × pixel height` (for example, `1200x1600`). Reject and regenerate any `2:3` result; do not relabel or crop it loosely as 3:4.
+7. Confirm that no files were created unless the user provided a concrete save destination outside this skill directory.
+8. If files were saved because the user provided an explicit destination path, confirm dimensions with an image tool such as `sips -g pixelWidth -g pixelHeight` and report the saved paths and dimensions.
+9. If files were not saved, present the generated images directly in the conversation and identify their aspect ratios.
