@@ -1,6 +1,4 @@
-# Hermes All-in-One Creative Director
-
-[中文文档](README.zh.md)
+# All-in-One Creative Director
 
 This is a production-oriented creative-skill library for Hermes Agent and Codex. It turns an agent into a combined producer, director, art director, asset manager, and visual QA reviewer—not merely a prompt writer.
 
