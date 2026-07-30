@@ -20,16 +20,3 @@ The library is organized around a dependency-aware workflow: establish the sourc
 | [`image-quality-check`](image-quality-check/SKILL.md) | Checks generated images for defects and compliance. |
 | [`style-distill`](.agents/skills/style-distill-v1.4/SKILL.md) | Extracts and validates reusable visual styles. |
 | [`cover-image`](.agents/skills/cover-image/SKILL.md) | Creates Chinese video covers in strict ratios. |
-
-
-# Contact
-
-![](./.docs/wechat.svg)
-
-WeChat
-
-# Sponsor
-
-![](./.docs/pay.webp)
-
-WeChat Tip
