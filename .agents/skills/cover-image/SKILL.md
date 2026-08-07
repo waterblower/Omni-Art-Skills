@@ -1,13 +1,13 @@
 ---
 name: cover-image
-description: Create Chinese video cover images and thumbnails from a reference image, especially for AI/tech tutorial covers requiring exact Chinese title text, soft-light 3D-rendered portrait aesthetics, and exact 16:9, 4:3, and 3:4 aspect ratios. Use when the user asks to make, redo, or adjust cover images/thumbnails with a supplied reference image and Chinese text. Treat 3:4 as a strict ratio that must never be substituted with 2:3.
+description: Create Chinese video cover images and thumbnails from a reference image, preserving the reference subject and style while adding exact Chinese title text and exact 16:9, 4:3, and 3:4 aspect ratios. Include people only when the user explicitly requests them. Use when the user asks to make, redo, or adjust cover images/thumbnails with a supplied reference image and Chinese text. Treat 3:4 as a strict ratio that must never be substituted with 2:3.
 ---
 
 # Cover Image
 
 ## Core Intent
 
-Create polished Chinese video cover images from a supplied reference image while preserving the reference's soft-light, high-precision 3D-rendered portrait feel. Prioritize accurate text, usable thumbnail composition, and direct delivery in the Codex conversation.
+Create polished Chinese video cover images from a supplied reference image while preserving its subject, visual style, and important details. Prioritize accurate text, usable thumbnail composition, and direct delivery in the Codex conversation. Do not add people unless the user explicitly asks for them.
 
 ## Required Skill Chaining
 
@@ -32,9 +32,6 @@ If the image model produces inaccurate Chinese text, use deterministic local pos
 Use these defaults unless the user says otherwise:
 
 - Text: two title lines, exactly as provided by the user.
-- For the recurring AI tutorial cover pattern, use:
-  - `Image2超精度3D渲染`
-  - `Codex智能体`
 - Aspect ratios: create exactly three covers by default: one 16:9 cover, one 4:3 cover, and one 3:4 cover.
 - **Hard ratio constraint:** `3:4` means width:height = `3:4`. Never generate, crop, resize, label, or deliver a `2:3` image as the `3:4` cover. These ratios are not interchangeable or acceptable approximations.
 - Exception: create only one cover when the user explicitly asks for a single image or specifies exactly one aspect ratio.
@@ -48,34 +45,34 @@ Use these defaults unless the user says otherwise:
 
 Preserve the reference image's aesthetic before adding cover polish:
 
-- Keep soft daylight, gentle highlights, and natural skin tones.
+- Preserve the reference's lighting, color palette, materials, and atmosphere.
 - Avoid harsh contrast, action-poster lighting, smoky dark grading, heavy black shadows, and over-saturated orange/blue color casts.
 - Keep the image bright enough to feel close to the reference, not dramatically darker.
-- Preserve the subject's face identity, hair detail, clothing color, and premium realistic 3D-rendered texture.
+- Preserve the reference subject's identity and defining details. Do not introduce people, faces, human anatomy, or portrait styling unless the user explicitly requests them.
 - Use subtle readability treatment behind text: soft shadow, light stroke, gentle darkening, or local blur only where needed.
 
 ## Composition Rules
 
-Protect the face. Text may overlap the body, jacket, shoulders, chest, lower hair, or background, but must not cover the eyes, nose, mouth, or main face area.
+Keep text away from the reference's most important subject details. If people are explicitly requested, do not cover the eyes, nose, mouth, or main face area.
 
 For 16:9:
 
-- Put the face on the right or center-right.
+- Place the primary subject on the right or center-right when that best matches the reference and leaves room for the title.
 - Use left or lower-left space for the two-line title.
 - Keep title spacing generous and readable at thumbnail size.
 
 For 4:3:
 
 - Avoid cramped title blocks.
-- Let the title occupy lower-left or lower-middle space and overlap body/clothing if needed.
+- Let the title occupy lower-left or lower-middle space and overlap low-priority areas if needed.
 - Prefer comfortable line spacing and margins over forcing all text into a narrow side column.
 
 For 3:4:
 
 - Lock the canvas to an exact `3:4` width-to-height ratio, preferably `1200x1600`. Do not use `2:3` dimensions such as `1024x1536` or `1200x1800`.
-- Keep the face in the upper half.
+- Keep the primary subject in the upper half when that best suits the reference.
 - Put the title in the lower third or lower quarter.
-- Allow text to cover the jacket/body but not the face.
+- Allow text to cover low-priority background or subject areas, but not the primary focal details.
 
 ## Prompt Pattern
 
@@ -85,13 +82,13 @@ Use a structured prompt like this, adapting only the user-specific text and rati
 Use case: ads-marketing
 Asset type: Chinese video cover thumbnail, <aspect ratio>.
 Canvas ratio: use the exact requested width:height ratio. For 3:4, use an exact 3:4 canvas such as 1200x1600; never use or substitute 2:3.
-Input image: use the provided image as the primary visual reference. Preserve the same realistic ultra-detailed 3D-rendered subject, face identity, soft skin, detailed hair, clothing, and gentle soft daylight from the reference image.
-Primary request: Create a polished Chinese video cover with a bright, soft look. Avoid harsh contrast, smoky dark grading, heavy black shadows, and action-poster lighting. Keep the palette close to the reference: soft neutral daylight, warm skin tones, airy background, refined high-precision 3D render feeling.
+Input image: use the provided image as the primary visual reference. Preserve its subject, composition, visual style, materials, colors, lighting, and defining details. Include people or faces only if the user explicitly requests them.
+Primary request: Create a polished Chinese video cover with a bright, readable look that remains faithful to the reference. Avoid harsh contrast, smoky dark grading, heavy black shadows, and action-poster lighting. Keep the palette and atmosphere close to the reference.
 Text (verbatim, two lines only):
 "<line 1>"
 "<line 2>"
 Typography: bold modern title type, large and readable; first line white, second line warm gold or another user-approved accent; subtle outline/shadow only enough for readability.
-Composition/framing: <ratio-specific placement>. Text may overlap body/clothing, but must not cover eyes, nose, mouth, or the main face area.
+Composition/framing: <ratio-specific placement>. Keep text clear of the reference's primary focal details. If people are explicitly requested, text must not cover the eyes, nose, mouth, or main face area.
 Constraints: Chinese text must be exactly the two lines above, no misspellings, no extra text, no watermark. Aspect ratio must be exact; 3:4 must never become 2:3.
 ```
 
@@ -102,7 +99,7 @@ Before finishing:
 1. Inspect each image visually.
 2. Confirm the text is exact and contains no extra text.
 3. Confirm lighting remains soft and not significantly darker than the reference.
-4. Confirm text does not cover the face.
+4. Confirm text does not cover the reference's primary focal details; if people were explicitly requested, confirm it does not cover the face.
 5. Confirm that the default output set is three images: 16:9, 4:3, and 3:4, unless the user explicitly requested one image.
 6. Verify the actual pixel dimensions of every output, including images delivered only in the conversation. For the 3:4 cover, confirm `4 × pixel width = 3 × pixel height` (for example, `1200x1600`). Reject and regenerate any `2:3` result; do not relabel or crop it loosely as 3:4.
 7. Confirm that no files were created unless the user provided a concrete save destination outside this skill directory.
